@@ -30,7 +30,22 @@ input { font: inherit; font-size: 20px; user-select: text; -webkit-user-select: 
 #hud .target.revealed { background: #3a1220; }
 
 /* v2 terminal: bottom ~22% of every screen */
-#terminal { flex: none; height: 22vh; min-height: 118px; }
+/* v3: the terminal scales with the screen so short phones keep room for the game (never overlaps it: flex sibling). */
+#terminal { flex: none; height: 19vh; height: clamp(72px, 19vh, 180px); min-height: 0; }
+@media (max-height: 700px) {
+  #terminal { height: 15vh; height: clamp(64px, 15vh, 110px); }
+  #hud { gap: 4px; padding: 4px 8px 3px; }
+  #hud .cell { padding: 2px 6px; border-radius: 8px; }
+  #hud .cell small { font-size: 9px; }
+  #hud .cell b { font-size: 15px; }
+  #hud .me b.face { font-size: 18px; }
+  #hud .bank .meter { height: 7px; }
+  #hud .clock { font-size: 14px; }
+}
+@media (max-height: 600px) {
+  #hud .cell small { display: none; }
+  #hud .cell { padding: 3px 6px; }
+}
 main#view { flex: 1; min-height: 0; overflow-y: auto; padding: 14px; -webkit-overflow-scrolling: touch; }
 #game { position: relative; flex: 1; min-height: 0; overflow: hidden; }
 #game > .gamebox { position: absolute; top: 0; right: 0; bottom: 0; left: 0; }

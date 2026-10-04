@@ -25,6 +25,19 @@
     }
     var pre = document.getElementById('hh-fatal-msg');
     pre.textContent += msg + '\n';
+    report(msg);
+  }
+
+  // v3: tell the server (and so the host terminal) which phone/browser failed and why, so it can be fixed.
+  var reported = 0;
+  function report(msg) {
+    if (reported++ > 2) return;
+    try {
+      var x = new XMLHttpRequest();
+      x.open('POST', '/api/client-error', true);
+      x.setRequestHeader('Content-Type', 'application/json');
+      x.send(JSON.stringify({ page: location.pathname, message: String(msg).slice(0, 300), ua: navigator.userAgent }));
+    } catch (e) { /* best effort */ }
   }
   window.__hhFatal = fatal;
 
@@ -64,8 +77,15 @@
     });
   })).then(function () {
     started = true;
-    // import() is wrapped in Function so this file still parses in browsers that lack it.
-    return new Function('u', 'return import(u)')(entry);
+    // Load the app as a normal module script (no eval / import(), which strict or privacy browsers may block).
+    return new Promise(function (resolve, reject) {
+      var s = document.createElement('script');
+      s.type = 'module';
+      s.src = entry;
+      s.onload = function () { resolve(); };
+      s.onerror = function () { reject(new Error('Could not download ' + entry + ' (network or blocked by the browser)')); };
+      document.head.appendChild(s);
+    });
   }).then(function () {
     window.__HH.ready = true;
   }, function (err) {

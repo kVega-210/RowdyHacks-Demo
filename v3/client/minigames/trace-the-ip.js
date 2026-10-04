@@ -8,6 +8,7 @@ css('mg-trace-ip', `
 .ti-list{display:grid;gap:6px}
 .ti-label{text-align:center;font:900 24px system-ui,sans-serif;letter-spacing:.12em;color:#ff5c7a;margin:8px 0 0;text-shadow:0 0 10px #ff224466}
 .ti-list .hh-btn{font:800 20px ui-monospace,monospace;min-height:40px;padding:4px 12px;background:var(--panel,#16213a);color:#9fe3ff;box-shadow:0 0 0 2px var(--cyan,#4dd2ff) inset,0 4px 0 var(--panel2,#0a0f1c)}
+@media (max-height:700px){.ti-list{gap:5px}.ti-list .hh-btn{min-height:34px;font-size:18px;padding:2px 10px}.ti-target b{font-size:22px}.ti-label{margin-top:4px;font-size:21px}}
 `);
 
 export function mount(container, opts) {

@@ -226,6 +226,18 @@ public final class HeistServer {
         return out;
     }
 
+    /** "Brave / Android 9" style label from a user agent, for error reports. */
+    static String shortDevice(String ua) {
+        String browser = ua.contains("Brave") ? "Brave" : ua.contains("SamsungBrowser") ? "Samsung Internet" : ua.contains("Firefox") || ua.contains("FxiOS") ? "Firefox"
+                : ua.contains("CriOS") ? "Chrome (iOS)" : ua.contains("EdgA") || ua.contains("Edg/") ? "Edge" : ua.contains("Chrome") ? "Chrome" : ua.contains("Safari") ? "Safari" : "Browser";
+        java.util.regex.Matcher m;
+        String os = "";
+        if ((m = java.util.regex.Pattern.compile("Android ([0-9.]+)").matcher(ua)).find()) os = "Android " + m.group(1);
+        else if ((m = java.util.regex.Pattern.compile("OS ([0-9_]+) like Mac").matcher(ua)).find()) os = "iOS " + m.group(1).replace('_', '.');
+        if ((m = java.util.regex.Pattern.compile("Chrome/([0-9]+)").matcher(ua)).find() && !browser.equals("Safari")) browser += " " + m.group(1);
+        return (browser + " / " + os).trim();
+    }
+
     // ------------------------------------------------------------------ REST
 
     private void routes(Javalin app) {
@@ -271,6 +283,16 @@ public final class HeistServer {
         app.get("/api/leaderboard", ctx -> ctx.json(Stats.leaderboard(store, 50)));
         app.get("/api/games", ctx -> ctx.json(store.finishedRooms(20)));
         app.get("/api/roast/{room}", ctx -> ctx.json(roastFor(ctx.pathParam("room").toUpperCase())));
+        // v3: phones that fail to start report why (browser + error); shown in the server window and on every host terminal.
+        app.post("/api/client-error", ctx -> {
+            JsonNode b = Json.MAPPER.readTree(ctx.body().length() > 4000 ? "{}" : ctx.body());
+            String msg = Json.str(b, "message", "?").replaceAll("[\\p{Cntrl}]", " ");
+            String ua = Json.str(b, "ua", "?").replaceAll("[\\p{Cntrl}]", " ");
+            String device = shortDevice(ua);
+            System.out.println("[phone error] " + device + " | " + msg + " | " + ua);
+            for (var room : rooms.all()) room.toHosts(Json.msg("client_error", "device", device, "message", msg.length() > 160 ? msg.substring(0, 160) : msg));
+            ctx.status(204);
+        });
         app.post("/api/roast", ctx -> {
             JsonNode body = Json.read(ctx.body());
             if (body == null || !body.path("players").isArray()) {

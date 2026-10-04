@@ -96,6 +96,7 @@ function handle(m) {
       shake();
       break;
     case 'fx': onFx(m); break;
+    case 'client_error': L(`PHONE COULD NOT START (${m.device}): ${m.message}`, 'bad'); break;
     case 'narrate': if (!freezeAudio.active) narrator.say(m.key, m.vars || {}); break; // only the siren during a Freeze
     case 'rival_start': store.rival = m; store.rivalResult = null; L(`RIVAL HEIST: ${m.a.name} VS ${m.b.name}`, 'warn'); if (store.phase === 'play') render(); break;
     case 'rival_result': store.rivalResult = m; L(`${m.winnerName} WON THE SHOWDOWN +${money(m.amount)}`, 'good'); if (store.rival) rivalView.render(main, store.rival, m); sfx.play('win'); break;
@@ -233,6 +234,8 @@ function renderLobby() {
         <div class="code">${esc(s.room)}</div>
         <img alt="Join QR" src="/api/qr?size=520&text=${encodeURIComponent(joinUrl)}">
         <div class="url">${esc(joinUrl.replace(/^https?:\/\//, ''))}</div>
+        <div class="join-help">QR not working? Type <b>${esc(joinUrl.replace(/^https?:\/\//, ''))}</b> into Chrome or Safari.<br>
+          Brave: if it warns about a secure connection, tap <b>Continue</b> (or turn Shields off for this site).</div>
       </div>
       <div style="display:flex;flex-direction:column;min-height:0">
         <h2 style="margin:0 0 12px;font-size:34px">The crew (${players.length}/${balance.players.max})</h2>

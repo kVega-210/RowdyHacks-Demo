@@ -72,6 +72,11 @@ css('hh-kit', `
 .hh-timer>i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#ff4d4d,var(--gold,#ffd84d) 40%,#3dff9a);transform-origin:left}
 .hh-stage{position:relative;flex:1;margin:8px;min-height:0}
 .hh-status{text-align:center;font-weight:700;min-height:28px;padding:2px 10px 10px;font-size:18px}
+.hh-status:empty{min-height:0;padding:0 0 6px}
+@media (max-height:700px){
+  .hh-head{padding:5px 10px 2px}.hh-title{font-size:16px}.hh-hint{font-size:13px;min-height:0}
+  .hh-timer{height:6px;margin-top:3px}.hh-stage{margin:5px 6px}.hh-status{min-height:0;padding:0 8px 4px;font-size:15px}
+}
 .hh-btn{appearance:none;border:0;border-radius:14px;min-width:56px;min-height:56px;padding:8px 12px;font:800 20px var(--font-display,system-ui),system-ui,sans-serif;letter-spacing:var(--display-spacing,0);
   color:var(--on-accent,#0b0f1a);background:var(--gold,#ffd84d);box-shadow:0 4px 0 var(--gold-dark,#a8861a);touch-action:manipulation;cursor:pointer;transition:transform .06s}
 .hh-btn:active,.hh-btn.hh-pressed{transform:translateY(3px);box-shadow:0 1px 0 var(--gold-dark,#a8861a)}
@@ -121,6 +126,16 @@ export function game(container, opts, cfg) {
     cfg.timeMs ? h('div', { class: 'hh-timer' }, timerBar) : null,
     stage, status);
   container.append(root);
+  // v3 safety net for very small screens: if a game's layout is taller than its stage, scale the stage down to fit
+  // (CSS zoom keeps taps accurate). Measured right after the game builds its UI and again on resize/rotate.
+  const fitStage = () => {
+    if (destroyed || !stage.isConnected) return;
+    stage.style.zoom = '';
+    const have = stage.clientHeight, need = stage.scrollHeight;
+    if (have > 0 && need > have + 2) stage.style.zoom = String(Math.max(0.6, have / need).toFixed(3));
+  };
+  setTimeout(fitStage, 30);
+  setTimeout(fitStage, 400);
 
   const loops = new Set();
   const timers = [];
@@ -219,6 +234,7 @@ export function game(container, opts, cfg) {
     raf = requestAnimationFrame(frame);
   }
   raf = requestAnimationFrame(frame);
+  g.on(window, 'resize', () => setTimeout(fitStage, 120));
   return g;
 }
 

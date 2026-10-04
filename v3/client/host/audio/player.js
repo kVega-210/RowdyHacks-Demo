@@ -28,8 +28,8 @@ export class Narrator {
       fetch('/content/narrator.json').then((r) => r.json()).catch(() => ({ lines: [], named: [] })),
       fetch('/host/audio/manifest.json').then((r) => (r.ok ? r.json() : { lines: {} })).catch(() => ({ lines: {} })),
     ]);
-    for (const l of nar.lines || []) (this.lines[l.event] ||= []).push(l);
-    for (const l of nar.named || []) (this.named[l.event] ||= []).push(l);
+    for (const l of nar.lines || []) (this.lines[l.event] = this.lines[l.event] || []).push(l);
+    for (const l of nar.named || []) (this.named[l.event] = this.named[l.event] || []).push(l);
     this.manifest = man.lines || {};
   }
 

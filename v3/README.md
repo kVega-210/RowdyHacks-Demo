@@ -28,11 +28,16 @@ Press **Fill with bots** to play solo. The minigame sandbox is at `/dev/minigame
 ```sh
 ./run.sh test                                   # JUnit tests (50)
 node scripts/browser-check/minigames.mjs        # fuzz every minigame in headless Chromium (server on 7072)
+node scripts/browser-check/fit.mjs               # every minigame fits above the terminal on 320x480 .. 412x780 phones
 HEIST_TIME_SCALE=4 PORT=7173 ./run.sh           # sped-up server, then:
 node scripts/browser-check/e2e.mjs http://localhost:7173   # host + phone + bots full game
 ```
 
 ## Phones can't load the game?
+- **Brave:** with Shields' "Upgrade connections to HTTPS" on Strict, Brave shows a warning for the game's plain
+  `http://` LAN address. Tap **Continue**, or turn Shields off for that address.
+- **The host terminal tells you why a phone failed:** any phone that can't start the game reports its browser and the
+  error, shown as "PHONE COULD NOT START (Brave 79 / Android 9): ..." on the big screen and in the server window.
 - **Blank or error screen on the phone:** open the link in the phone's normal browser (Chrome on Android, Safari on
   iPhone), not inside a QR-scanner or social app. The game now shows a readable error instead of a blank page; send us
   the red "Details" text if you see it. It needs roughly iOS 13+ / Android Chrome 80+.

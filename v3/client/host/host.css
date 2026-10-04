@@ -34,6 +34,8 @@ button { font: inherit; cursor: pointer; }
 .join-card { background: var(--panel); border: 3px solid var(--line); border-radius: 26px; padding: min(26px, 3cqh); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: min(10px, 1.2cqh); min-height: 0; overflow: hidden; }
 .join-card .code { font: 900 min(150px, 19cqh)/1 ui-monospace, monospace; letter-spacing: .12em; color: var(--gold); text-shadow: 0 6px 0 #000; }
 .join-card img { width: min(260px, 38cqh); height: min(260px, 38cqh); border-radius: 16px; background: #fff; image-rendering: pixelated; }
+.join-card .join-help { font-size: min(17px, 2.5cqh); color: var(--dim); text-align: center; line-height: 1.3; max-width: 92%; }
+.join-card .join-help b { color: var(--ink); }
 .join-card .url { font-size: min(26px, 3.6cqh); color: var(--cyan); font-weight: 700; }
 .roster-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: min(12px, 1.4cqh); align-content: start; }
 .chip { background: var(--panel); border: 2px solid var(--line); border-radius: 16px; padding: min(14px, 1.5cqh) 18px; font-size: min(28px, 4.4cqh); font-weight: 800; display: flex; justify-content: space-between; animation: chipIn .3s cubic-bezier(.2,1.6,.4,1); }
