@@ -1,0 +1,9 @@
+{
+  "id": "small-vault-big-vault",
+  "name": "Small Vault / Big Vault",
+  "prompt": "Two vaults. One is easy. One is worth a lot more.",
+  "options": [
+    { "tier": "1", "label": "Small Vault", "blurb": "Easy lock, normal cash.", "risk": "safe" },
+    { "tier": "3", "label": "Big Vault", "blurb": "Max difficulty. Huge payout, huge fine.", "risk": "risky" }
+  ]
+}

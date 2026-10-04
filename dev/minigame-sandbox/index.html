@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Minigame Sandbox · HEIST HAVOC!</title>
+<style>
+  :root{color-scheme:dark}
+  body{margin:0;background:#05070d;color:#e9f1ff;font:14px system-ui,sans-serif;display:flex;gap:16px;padding:16px;flex-wrap:wrap}
+  .panel{flex:1;min-width:280px;max-width:520px;display:flex;flex-direction:column;gap:10px}
+  h1{margin:0;font-size:20px;color:#ffd84d}
+  label{display:flex;flex-direction:column;gap:4px;font-weight:600}
+  select,input,button{font:inherit;padding:8px;border-radius:8px;border:1px solid #2a3555;background:#121a2e;color:inherit}
+  button{background:#ffd84d;color:#0b0f1a;font-weight:800;border:0;cursor:pointer}
+  button.sec{background:#2a3555;color:#e9f1ff}
+  .row{display:flex;gap:8px;flex-wrap:wrap}.row>*{flex:1}
+  .frame{width:390px;height:760px;max-width:100%;border:10px solid #222;border-radius:36px;position:relative;overflow:hidden;background:#000}
+  .frame .stage{position:absolute;inset:0}
+  #log{background:#000;border:1px solid #2a3555;border-radius:8px;height:220px;overflow:auto;padding:8px;font:12px ui-monospace,monospace;white-space:pre-wrap}
+  .ok{color:#3dff9a}.bad{color:#ff5c7a}.warn{color:#ff9f43}
+  #fps{position:absolute;top:6px;left:8px;z-index:99;font:700 11px ui-monospace,monospace;color:#3dff9a;background:#000a;padding:2px 6px;border-radius:6px;pointer-events:none}
+  .stats{display:flex;gap:12px}
+</style>
+</head>
+<body>
+<div class="panel">
+  <h1>Minigame Sandbox</h1>
+  <label>Minigame <select id="game"></select></label>
+  <div class="row">
+    <label>Difficulty <select id="diff"><option>1</option><option>2</option><option>3</option></select></label>
+    <label>Speed <select id="speed"><option>1</option><option>1.5</option><option>2</option><option>3</option></select></label>
+    <label>Seed <input id="seed" type="number" value="1234"></label>
+  </div>
+  <div class="row">
+    <label>Sabotage modifier <select id="mod"><option value="">none</option></select></label>
+    <label>Wager wrapper <select id="wrap"><option value="">none</option></select></label>
+  </div>
+  <div class="row">
+    <button id="run">Mount</button>
+    <button id="next" class="sec">Random seed + mount</button>
+    <button id="stop" class="sec">Destroy</button>
+  </div>
+  <label style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="auto"> Auto-restart after result</label>
+  <div class="stats"><span>Mounts: <b id="mounts">0</b></span><span class="ok">Success: <b id="wins">0</b></span><span class="bad">Fail: <b id="fails">0</b></span><span class="warn">Contract violations: <b id="viol">0</b></span></div>
+  <div id="log"></div>
+</div>
+<div class="frame"><div id="fps">-- fps</div><div class="stage" id="stage"></div></div>
+
+<script type="module">
+import { unlockAudio } from '/fx/sfx.js';
+
+const $ = (id) => document.getElementById(id);
+const log = (msg, cls = '') => {
+  const line = document.createElement('div');
+  line.className = cls;
+  line.textContent = `${new Date().toLocaleTimeString()}  ${msg}`;
+  $('log').prepend(line);
+};
+const counts = { mounts: 0, wins: 0, fails: 0, viol: 0 };
+const bump = (k) => { counts[k]++; $(k).textContent = counts[k]; };
+
+const [games, mods, wraps, balance] = await Promise.all([
+  fetch('/api/minigames').then((r) => r.json()).catch(() => []),
+  fetch('/api/modifiers').then((r) => r.json()).catch(() => []),
+  fetch('/api/wagers').then((r) => r.json()).catch(() => []),
+  fetch('/shared/balance.json').then((r) => r.json()),
+]);
+for (const g of games) $('game').append(new Option(`${g.name} [${g.tags.join(', ')}]`, g.file));
+for (const m of mods) $('mod').append(new Option(m.name, m.file));
+for (const w of wraps) $('wrap').append(new Option(w.name, w.file + '|' + w.id));
+const params = new URLSearchParams(location.search);
+if (params.get('game')) $('game').value = `/minigames/${params.get('game')}.js`;
+if (params.get('d')) $('diff').value = params.get('d');
+if (params.get('s')) $('speed').value = params.get('s');
+log(`Discovered ${games.length} minigames, ${mods.length} modifiers, ${wraps.length} wrappers`);
+
+let current = null, removeMod = null;
+function destroy() {
+  if (removeMod) { removeMod(); removeMod = null; }
+  if (current) { current.destroy(); current = null; }
+  $('stage').replaceChildren();
+}
+
+async function mount() {
+  destroy();
+  unlockAudio();
+  const file = $('game').value;
+  const mod = await import(file);
+  const id = mod.meta.id;
+  let calls = 0;
+  const settle = (kind, res) => {
+    calls++;
+    if (calls > 1) { bump('viol'); log(`${id}: ${kind} called again (call #${calls}) - CONTRACT VIOLATION`, 'bad'); return; }
+    bump(kind === 'onSuccess' ? 'wins' : 'fails');
+    log(`${id}: ${kind}(${JSON.stringify(res)})`, kind === 'onSuccess' ? 'ok' : 'bad');
+    if ($('auto').checked) setTimeout(() => { $('seed').value = Math.floor(Math.random() * 1e6); mount(); }, 600);
+  };
+  const opts = {
+    difficulty: Number($('diff').value), speed: Number($('speed').value), seed: Number($('seed').value),
+    tiers: balance.wager.tiers,
+    onSuccess: (r) => settle('onSuccess', r), onFail: (r) => settle('onFail', r),
+  };
+  const stage = $('stage');
+  const [wrapFile, wrapId] = $('wrap').value.split('|');
+  try {
+    if (wrapFile) {
+      const w = await import(wrapFile);
+      const content = await fetch(`/content/wagers/${wrapId}.json`).then((r) => r.json()).catch(() => ({}));
+      current = w.mount(stage, Object.assign({}, opts, { game: mod, config: balance.wager.wrappers[wrapId], content }));
+    } else {
+      current = mod.mount(stage, opts);
+    }
+    if (!current || typeof current.destroy !== 'function') { bump('viol'); log(`${id}: mount() must return {destroy}`, 'bad'); }
+  } catch (e) {
+    bump('viol');
+    log(`${id}: mount threw ${e.message}`, 'bad');
+    console.error(e);
+  }
+  bump('mounts');
+  log(`mounted ${id} d=${opts.difficulty} speed=${opts.speed} seed=${opts.seed}${wrapId ? ' wrapped in ' + wrapId : ''}`);
+  if ($('mod').value) {
+    const m = await import($('mod').value);
+    setTimeout(() => {
+      removeMod = m.applyModifier(stage, { duration: balance.sabotage.durationMs, strength: balance.sabotage.strength });
+      log(`applied modifier ${m.meta.id} for ${balance.sabotage.durationMs}ms`, 'warn');
+    }, 300);
+  }
+}
+
+$('run').onclick = mount;
+$('next').onclick = () => { $('seed').value = Math.floor(Math.random() * 1e6); mount(); };
+$('stop').onclick = destroy;
+
+let frames = 0, last = performance.now();
+(function fps(now) {
+  frames++;
+  if (now - last >= 1000) { $('fps').textContent = `${frames} fps`; frames = 0; last = now; }
+  requestAnimationFrame(fps);
+})(performance.now());
+window.__sandbox = { mount, destroy, counts };
+</script>
+</body>
+</html>

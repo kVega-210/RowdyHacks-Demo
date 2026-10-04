@@ -1,0 +1,12 @@
+{
+  "_doc": "CT-02 sabotage modifiers. Each file in /client/modifiers exports meta and applyModifier(el,{duration,strength}) -> remove(). Durations/strengths come from balance.json sabotage.*; 'strength' is 0..1.",
+  "modifiers": [
+    { "id": "speed-up", "name": "Turbo", "file": "/modifiers/speed-up.js", "description": "Everything in their minigame runs faster (stacks with the round's speed ramp).", "pick": "Make their clock tick faster." },
+    { "id": "inverted-controls", "name": "Mirror Mode", "file": "/modifiers/inverted-controls.js", "description": "Mirrors the minigame left-to-right. Taps still land where they look.", "pick": "Flip their screen like a mirror." },
+    { "id": "shrunken-buttons", "name": "Tiny Buttons", "file": "/modifiers/shrunken-buttons.js", "description": "Shrinks every button. Still tappable, just fiddly.", "pick": "Shrink their buttons." },
+    { "id": "screen-jitter", "name": "Earthquake", "file": "/modifiers/screen-jitter.js", "description": "Shakes the minigame around a few pixels.", "pick": "Shake their screen." },
+    { "id": "false-alarm", "name": "False Alarm", "file": "/modifiers/false-alarm.js", "description": "Flashes fake ALARM warnings that do nothing (taps pass straight through).", "pick": "Set off a fake alarm." },
+    { "id": "lockout", "name": "Lockout", "file": "/modifiers/lockout.js", "description": "Disables one control for a couple of seconds at a time, then moves on.", "pick": "Lock one of their buttons." },
+    { "id": "jam-the-signal", "name": "Jam the Signal", "file": "/modifiers/jam-the-signal.js", "description": "Static noise and twitching controls. Also the Hacker vs. Hacker scramble.", "pick": "Jam their signal." }
+  ]
+}

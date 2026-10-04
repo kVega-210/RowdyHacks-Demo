@@ -1,0 +1,9 @@
+{
+  "id": "the-double-safe",
+  "name": "The Double Safe",
+  "prompt": "Crack one lock, or two at the same time?",
+  "options": [
+    { "tier": "1", "label": "One Lock", "blurb": "Normal money.", "risk": "safe" },
+    { "tier": "2", "label": "Two Locks", "blurb": "Both at once. Double payout, both must open.", "risk": "risky" }
+  ]
+}

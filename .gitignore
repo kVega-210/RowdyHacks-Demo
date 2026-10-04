@@ -1,0 +1,22 @@
+# Build output
+server/target/
+*.class
+
+# Runtime data: event logs, generated key sheets (depend on HEIST_KEY_SECRET), TTS cache
+data/
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Generated narrator audio is optional; keep the manifest out until gen-voice is run on purpose
+client/host/audio/lines/
+client/host/audio/manifest.json
+
+# Editors / OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+node_modules/
