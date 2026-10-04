@@ -5,6 +5,16 @@ export function setHeat(x) {
   document.documentElement.style.setProperty('--heat', v.toFixed(3));
 }
 
+// v2 Freeze: everything on screen stops moving (CSS animations and transitions) except the Freeze overlay, the host
+// banner/flash and the siren. Minigames are paused separately (kit timescale 0).
+const frozenCss = document.createElement('style');
+frozenCss.textContent = `
+html.hh-frozen *, html.hh-frozen *::before, html.hh-frozen *::after { animation-play-state: paused !important; transition: none !important; }
+html.hh-frozen .ov.freeze, html.hh-frozen .ov.freeze *, html.hh-frozen #banner, html.hh-frozen #banner *, html.hh-frozen #flash,
+html.hh-frozen .hh-siren-rise { animation-play-state: running !important; }`;
+document.head.append(frozenCss);
+export function setFrozen(on) { document.documentElement.classList.toggle('hh-frozen', !!on); }
+
 let curtain = null;
 let chain = Promise.resolve();
 

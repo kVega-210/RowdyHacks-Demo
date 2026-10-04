@@ -4,12 +4,12 @@ import { Narrator } from './audio/player.js';
 import { shake, bankDrain, esc } from './fx/fx.js';
 import { createTerminal } from '../fx/terminal.js';
 import { sirenRise, sirenClear } from '../fx/siren.js';
-import { fadeSwap, setHeat } from '../fx/screen.js';
+import { fadeSwap, setHeat, setFrozen } from '../fx/screen.js';
 import { banner, flash, clearFlash } from './overlays/overlays.js';
 import { installAdmin } from './admin/admin.js';
 import * as rivalView from './rival/rival.js';
 import * as finalView from './final/final.js';
-import { sfx, music, unlockAudio } from '../fx/sfx.js';
+import { sfx, music, unlockAudio, freezeAudio } from '../fx/sfx.js';
 
 // Loaded by /boot.js before this module runs (no top-level await: older browsers can't parse it).
 const balance = window.__HH.balance;
@@ -84,17 +84,18 @@ function handle(m) {
       sirenClear();
       store.freezeEndsAt = m.endsAt;
       if (m.roundEndsAt) store.endsAt = m.roundEndsAt;
-      flash('freeze', balance.freeze.windowMs); banner('freeze', 'FREEZE!', 'HANDS OFF YOUR PHONES', balance.freeze.windowMs); sfx.play('freeze');
+      flash('freeze', balance.freeze.windowMs); banner('freeze', 'FREEZE!', 'HANDS OFF YOUR PHONES', balance.freeze.windowMs);
+      startFreeze(Math.max(500, m.endsAt - sock.serverNow()));
       L('FREEZE! ALL CLOCKS PAUSED.', 'warn');
       break;
-    case 'freeze_end': clearFlash(); store.freezeEndsAt = 0; L('FREEZE LIFTED', 'dim'); break;
+    case 'freeze_end': clearFlash(); store.freezeEndsAt = 0; endFreeze(); L('FREEZE LIFTED', 'dim'); break;
     case 'bank_warning':
       banner('info', m.pct === 0 ? 'THE BANK IS EMPTY!' : `BANK AT ${m.pct}%`, m.pct === 0 ? 'Heist over. Wallets banked.' : '', 2200);
       L(m.pct === 0 ? 'BANK EMPTY. HEIST OVER. WALLETS AUTO-BANKED.' : `BANK RESERVES AT ${m.pct}%`, 'warn');
       shake();
       break;
     case 'fx': onFx(m); break;
-    case 'narrate': narrator.say(m.key, m.vars || {}); break;
+    case 'narrate': if (!freezeAudio.active) narrator.say(m.key, m.vars || {}); break; // only the siren during a Freeze
     case 'rival_start': store.rival = m; store.rivalResult = null; L(`RIVAL HEIST: ${m.a.name} VS ${m.b.name}`, 'warn'); if (store.phase === 'play') render(); break;
     case 'rival_result': store.rivalResult = m; L(`${m.winnerName} WON THE SHOWDOWN +${money(m.amount)}`, 'good'); if (store.rival) rivalView.render(main, store.rival, m); sfx.play('win'); break;
     case 'hvh_start': banner('info', '💻 HACKER vs HACKER', `${m.hackerName} can scramble ${m.victimName}`, 3000); L(`HACKER VS HACKER: ${m.hackerName} TARGETS ${m.victimName}`, 'warn'); break;
@@ -113,6 +114,20 @@ function handle(m) {
       break;
     default: break;
   }
+}
+
+// v2 Freeze: everything stops. Music off, narrator cut, all other sounds muted, the screen stops moving, and
+// only a looping siren plays until freeze_end.
+function startFreeze(ms) {
+  narrator.hush(true);
+  freezeAudio.start(ms);
+  setFrozen(true);
+}
+function endFreeze() {
+  if (!document.documentElement.classList.contains('hh-frozen') && !freezeAudio.active) return;
+  freezeAudio.end();
+  setFrozen(false);
+  narrator.hush(false);
 }
 
 function onFx(m) {
@@ -148,7 +163,7 @@ function onPhase(m) {
   const prev = store.phase;
   if (!m.resync && PHASE_LOG[m.phase]) { const [t, k] = PHASE_LOG[m.phase](m); L(t, k); }
   term.setScrollable(m.phase === 'end');
-  if (m.phase !== 'play') { sirenClear(); store.freezeEndsAt = 0; }
+  if (m.phase !== 'play') { sirenClear(); store.freezeEndsAt = 0; endFreeze(); }
   Object.assign(store, { phase: m.phase, round: m.round, rounds: m.rounds, roundType: m.roundType, banner: m.banner, endsAt: m.endsAt, overtime: m.overtime || 0 });
   if (m.phase === 'briefing') {
     store.rival = null; store.rivalResult = null;

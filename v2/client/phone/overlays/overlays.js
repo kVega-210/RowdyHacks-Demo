@@ -1,7 +1,8 @@
 // CL-05 Freeze! overlay (v2: the Steal overlay is gone). While an overlay is up the minigame underneath is paused
 // (kit timescale 0). Freeze is an honour system: any touch during the window is reported once as a violation.
 import { h, money } from '../ui.js';
-import { sfx } from '../../fx/sfx.js';
+import { freezeAudio } from '../../fx/sfx.js';
+import { setFrozen } from '../../fx/screen.js';
 
 const layer = () => document.getElementById('overlay');
 let current = null;
@@ -31,7 +32,9 @@ function timer(ctx, endsAt) {
 }
 
 export function freeze(ctx, msg) {
-  sfx.play('freeze');
+  // v2: the phone goes silent (the host plays the only sound, a siren) and the whole screen stops moving.
+  freezeAudio.start(Math.max(500, ctx.sock.msUntil(msg.endsAt)), { siren: false });
+  setFrozen(true);
   const [t, stopT] = timer(ctx, msg.endsAt);
   let reported = false;
   const el = h('div', { class: 'ov freeze' }, h('h1', {}, 'FREEZE!'), h('p', { style: { fontSize: '22px', fontWeight: 900 } }, 'HANDS OFF YOUR PHONE'), t);
@@ -44,7 +47,7 @@ export function freeze(ctx, msg) {
     el.querySelector('p').textContent = 'YOU MOVED! Penalty incoming...';
   };
   el.addEventListener('pointerdown', onTouch);
-  show(el, stopT);
+  show(el, () => { stopT(); freezeAudio.end(); setFrozen(false); });
 }
 
 export function freezeEnd() {

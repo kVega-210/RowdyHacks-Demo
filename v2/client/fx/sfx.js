@@ -149,9 +149,12 @@ const SOUNDS = {
 const BOARDS = { success: ['register', 'coin', 'jingle'], fail: ['siren', 'cuffs'] };
 
 const lastAt = {};
+let frozenUntil = 0;
+const isFrozen = () => performance.now() < frozenUntil;
 export const sfx = {
-  /** Play a sound by name. A file listed in /assets/sfx/manifest.json wins over the synth version. */
+  /** Play a sound by name. A file listed in /assets/sfx/manifest.json wins over the synth version. Silent during a Freeze. */
   play(name, { minGapMs = 0 } = {}) {
+    if (isFrozen()) return;
     try {
       const board = BOARDS[name];
       if (board) name = board[Math.floor(Math.random() * board.length)];
@@ -176,7 +179,7 @@ export const sfx = {
 const BASS = [98, 87.31, 77.78, 73.42]; // G2 F2 Eb2 D2, the classic descending march
 const LEAD = [392, 466.16, 587.33, 698.46, 783.99, 698.46, 587.33, 466.16];
 export const music = {
-  timer: 0, step: 0, rate: 1, intensity: 0, on: false, src: null,
+  timer: 0, step: 0, rate: 1, intensity: 0, on: false, paused: false, src: null,
   pitch() { return Math.pow(this.rate, 0.35) * Math.pow(2, (this.intensity * 7) / 12); }, // up to ~a fifth higher
   tempo() { return this.rate * (1 + 1.3 * this.intensity * this.intensity); }, // accelerates hard near the end
   start(rate = 1) {
@@ -188,13 +191,13 @@ export const music = {
   restart() {
     clearTimeout(this.timer);
     if (this.src) { try { this.src.stop(); } catch (_) { /* already stopped */ } this.src = null; }
-    if (!this.on) return;
+    if (!this.on || this.paused) return;
     if (files.music) {
       this.src = playFile('music', { bus: musicBus, loop: true, rate: this.fileRate() });
       return;
     }
     const tickFn = () => {
-      if (!this.on) return;
+      if (!this.on || this.paused) return;
       const p = this.pitch();
       const x = this.intensity;
       const i = this.step++;
@@ -219,4 +222,50 @@ export const music = {
   retune() { if (this.src && ctx) this.src.playbackRate.setTargetAtTime(this.fileRate(), ctx.currentTime, 0.3); },
   duck(on) { if (musicBus && ctx) musicBus.gain.setTargetAtTime(on ? 0.12 : MUSIC_VOL, ctx.currentTime, 0.1); },
   stop() { this.on = false; this.restart(); },
+  /** Silence the loop without forgetting it (Freeze); resume() picks up where the round's curve is now. */
+  pause() { this.paused = true; this.restart(); },
+  resume() { if (!this.paused) return; this.paused = false; this.restart(); },
+};
+
+// ---------------------------------------------------------------- freeze
+
+/**
+ * v2 Freeze: the music stops and every other sound is muted; only a looping police siren plays (siren: false for
+ * phones, which stay silent so a room full of phones doesn't wail over the big screen). end() restores everything.
+ */
+let sirenBus = null;
+let sirenSrc = null;
+export const freezeAudio = {
+  start(ms, { siren: withSiren = true } = {}) {
+    frozenUntil = performance.now() + Math.max(500, ms || 4000) + 400;
+    music.pause();
+    this.stopSiren();
+    const c = ac();
+    if (!withSiren || !c || muted || c.state !== 'running') return;
+    sirenBus = c.createGain();
+    sirenBus.gain.value = 1;
+    sirenBus.connect(master);
+    if (files.siren) { sirenSrc = playFile('siren', { bus: sirenBus, loop: true }); return; }
+    const half = 0.32;
+    const n = Math.ceil((Math.max(500, ms || 4000) / 1000) / half) + 1;
+    for (let i = 0; i < n; i++) {
+      const up = i % 2 === 0;
+      tone(up ? 620 : 1040, half, { type: 'sawtooth', slide: up ? 420 : -420, vol: 0.28, delay: i * half, bus: sirenBus });
+    }
+  },
+  stopSiren() {
+    if (sirenSrc) { try { sirenSrc.stop(); } catch (_) { /* already stopped */ } sirenSrc = null; }
+    if (sirenBus && ctx) {
+      const bus = sirenBus;
+      bus.gain.setTargetAtTime(0, ctx.currentTime, 0.05);
+      setTimeout(() => { try { bus.disconnect(); } catch (_) { /* gone */ } }, 400);
+    }
+    sirenBus = null;
+  },
+  end() {
+    frozenUntil = 0;
+    this.stopSiren();
+    music.resume();
+  },
+  get active() { return isFrozen(); },
 };

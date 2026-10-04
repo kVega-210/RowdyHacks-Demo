@@ -63,7 +63,14 @@ export class Narrator {
     return l;
   }
 
+  /** v2 Freeze: cut the current line, drop the queue and ignore new lines until hush(false). */
+  hush(on) {
+    this.hushed = !!on;
+    if (on) { this.queue = []; this.stopCurrent(); } else music.duck(false);
+  }
+
   enqueue(item) {
+    if (this.hushed) return;
     if (item.urgent) {
       this.queue = this.queue.filter((q) => q.urgent);
       this.queue.unshift(item);
