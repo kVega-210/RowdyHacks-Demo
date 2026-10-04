@@ -31,9 +31,10 @@ input { font: inherit; font-size: 20px; user-select: text; -webkit-user-select: 
 
 /* v2 terminal: bottom ~22% of every screen */
 /* v3: the terminal scales with the screen so short phones keep room for the game (never overlaps it: flex sibling). */
-#terminal { flex: none; height: 19vh; height: clamp(72px, 19vh, 180px); min-height: 0; }
+:root { --term-h: 19vh; --term-h: clamp(72px, 19vh, 180px); }
+#terminal { flex: none; height: var(--term-h); min-height: 0; }
 @media (max-height: 700px) {
-  #terminal { height: 15vh; height: clamp(64px, 15vh, 110px); }
+  :root { --term-h: 15vh; --term-h: clamp(64px, 15vh, 110px); }
   #hud { gap: 4px; padding: 4px 8px 3px; }
   #hud .cell { padding: 2px 6px; border-radius: 8px; }
   #hud .cell small { font-size: 9px; }
@@ -41,6 +42,11 @@ input { font: inherit; font-size: 20px; user-select: text; -webkit-user-select: 
   #hud .me b.face { font-size: 18px; }
   #hud .bank .meter { height: 7px; }
   #hud .clock { font-size: 14px; }
+}
+@media (max-height: 700px) {
+  main#view .banner { font-size: 21px; margin: 4px 0 0; }
+  main#view .countdown { font-size: 40px; line-height: 1.1; }
+  main#view { padding: 8px 10px; }
 }
 @media (max-height: 600px) {
   #hud .cell small { display: none; }

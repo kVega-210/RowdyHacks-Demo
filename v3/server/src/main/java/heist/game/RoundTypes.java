@@ -20,7 +20,8 @@ public final class RoundTypes {
     public static RoundType forRound(Balance b, int round, int players) {
         List<String> seq = b.strings("roundTypes.sequence");
         String id = seq.get((round - 1) % seq.size());
-        if ("rival".equals(id) && players < 2) id = "breakin";
+        // v3: a rival round pairs everyone, so it needs an even crew; otherwise it is a normal break-in.
+        if ("rival".equals(id) && (players < 2 || players % 2 != 0)) id = "breakin";
         return get(b, id);
     }
 }

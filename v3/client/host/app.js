@@ -20,7 +20,7 @@ const load = () => { try { return JSON.parse(localStorage.getItem(KEY) || 'null'
 const save = (v) => { try { localStorage.setItem(KEY, JSON.stringify(v)); } catch (_) { /* ok */ } };
 
 const store = { room: null, hostToken: null, settings: null, state: null, phase: 'lobby', round: 0, rounds: balance.rounds.count,
-  roundType: null, banner: '', rival: null, rivalResult: null, results: null, final: null, roast: null, prevBank: null, overtime: 0 };
+  roundType: null, banner: '', duels: {}, rivalEvent: false, results: null, final: null, roast: null, prevBank: null, overtime: 0 };
 const $ = (id) => document.getElementById(id);
 const main = $('main');
 const narrator = new Narrator();
@@ -98,8 +98,45 @@ function handle(m) {
     case 'fx': onFx(m); break;
     case 'client_error': L(`PHONE COULD NOT START (${m.device}): ${m.message}`, 'bad'); break;
     case 'narrate': if (!freezeAudio.active) narrator.say(m.key, m.vars || {}); break; // only the siren during a Freeze
-    case 'rival_start': store.rival = m; store.rivalResult = null; L(`RIVAL HEIST: ${m.a.name} VS ${m.b.name}`, 'warn'); if (store.phase === 'play') render(); break;
-    case 'rival_result': store.rivalResult = m; L(`${m.winnerName} WON THE SHOWDOWN +${money(m.amount)}`, 'good'); if (store.rival) rivalView.render(main, store.rival, m); sfx.play('win'); break;
+    // v3 rival duels
+    case 'rival_round':
+      L(`${m.event ? 'RIVAL EVENT' : 'RIVAL ROUND'}: ${(m.pairs || []).map((p) => `${p.a.face} ${p.a.name} VS ${p.b.face} ${p.b.name}`).join(' · ')}`, 'warn');
+      if (m.event) banner('info', '⚔️ RIVAL EVENT!', 'Jobs paused. Everyone duels a random rival.', 2600);
+      break;
+    case 'rival_event_start':
+      store.rivalEvent = true; store.duels = {};
+      store.freezeEndsAt = m.endsAt;
+      if (m.roundEndsAt) store.endsAt = m.roundEndsAt;
+      sfx.play('alarm');
+      if (store.phase === 'play') fadeSwap(render);
+      break;
+    case 'rival_event_end':
+      store.rivalEvent = false; store.duels = {};
+      store.freezeEndsAt = 0;
+      if (m.roundEndsAt) store.endsAt = m.roundEndsAt;
+      L('RIVAL EVENT OVER. JOBS RESUME.', 'dim');
+      if (store.phase === 'play') fadeSwap(render);
+      break;
+    case 'duel_start':
+      store.duels[m.duelId] = Object.assign({}, m, { bar: 0 });
+      if (showingDuels()) render();
+      break;
+    case 'duel_state': {
+      const d = store.duels[m.duelId];
+      if (d) { d.bar = m.bar; d.status = 'LIVE'; rivalView.update(m); }
+      break;
+    }
+    case 'duel_end': {
+      const d = store.duels[m.duelId];
+      if (!d || m.aborted) break;
+      d.result = m; d.bar = m.state ? m.state.bar : d.bar;
+      L(m.draw || !m.winnerId ? `DUEL ${d.a.name} VS ${d.b.name}: DRAW` : `${m.winnerName} WON THE ${String(d.name).toUpperCase()} DUEL +${money(m.amount)}`, m.draw ? 'dim' : 'good');
+      if (m.winnerId) sfx.play('success', { minGapMs: 300 });
+      if (showingDuels()) render();
+      // In a rival round the pair's next duel replaces this card a few seconds later.
+      if (!store.rivalEvent) setTimeout(() => { if (store.duels[m.duelId] === d) { delete store.duels[m.duelId]; if (showingDuels()) render(); } }, 3200);
+      break;
+    }
     case 'hvh_start': banner('info', '💻 HACKER vs HACKER', `${m.hackerName} can scramble ${m.victimName}`, 3000); L(`HACKER VS HACKER: ${m.hackerName} TARGETS ${m.victimName}`, 'warn'); break;
     case 'teams_update': banner('info', 'CREW SHAKE-UP!', 'Teams swapped', 2000); L('CREW SHAKE-UP: TEAMS SWAPPED', 'warn'); break;
     case 'final_standings':
@@ -165,10 +202,10 @@ function onPhase(m) {
   const prev = store.phase;
   if (!m.resync && PHASE_LOG[m.phase]) { const [t, k] = PHASE_LOG[m.phase](m); L(t, k); }
   term.setScrollable(m.phase === 'end');
-  if (m.phase !== 'play') { sirenClear(); store.freezeEndsAt = 0; endFreeze(); }
+  if (m.phase !== 'play') { sirenClear(); store.freezeEndsAt = 0; endFreeze(); store.rivalEvent = false; }
   Object.assign(store, { phase: m.phase, round: m.round, rounds: m.rounds, roundType: m.roundType, banner: m.banner, endsAt: m.endsAt, overtime: m.overtime || 0 });
   if (m.phase === 'briefing') {
-    store.rival = null; store.rivalResult = null;
+    store.duels = {}; store.rivalEvent = false;
     music.start(balance.speed.base * balance.speed.perRound ** Math.max(0, m.round - 1));
     music.setRate(balance.speed.base * balance.speed.perRound ** Math.max(0, m.round - 1));
     if (m.round === 1 && !m.resync) narrator.say('game_start');
@@ -212,12 +249,16 @@ function render() {
   switch (store.phase) {
     case 'lobby': return renderLobby();
     case 'briefing': return renderBriefing();
-    case 'play': return store.rival ? rivalView.render(main, store.rival, store.rivalResult) : renderBoard();
+    case 'play': return showingDuels() ? rivalView.render(main, store) : renderBoard();
     case 'results': return renderResults();
     case 'between': return renderBetween();
     case 'end': return store.final ? finalView.render(main, store.final, store.roast, store.room) : (main.innerHTML = '<div class="center-stage"><h1>Counting the loot...</h1></div>');
     default: return undefined;
   }
+}
+
+function showingDuels() {
+  return store.phase === 'play' && (store.rivalEvent || store.roundType === 'rival');
 }
 
 function renderLobby() {
@@ -239,20 +280,22 @@ function renderLobby() {
       </div>
       <div style="display:flex;flex-direction:column;min-height:0">
         <h2 style="margin:0 0 12px;font-size:34px">The crew (${players.length}/${balance.players.max})</h2>
-        <div class="roster-grid">${players.map((p) => `<div class="chip ${p.on ? '' : 'off'}"><span><span class="face">${esc(p.face || '')}</span> ${esc(p.name)}</span><span>${p.bot ? '🤖' : ''}</span></div>`).join('') || '<div style="color:var(--dim)">Scan the QR or open the URL on your phone</div>'}</div>
+        <div class="vault-preview">${players.length ? (() => { const e = economyPreview(players.length, set.rounds > 0 ? set.rounds : balance.rounds.count); return `🏦 Vault <b>${money(e.bank)}</b> · ≈ <b>${money(e.perJob)}</b> per job`; })() : 'Bigger crew = bigger vault = bigger payouts'}</div>
+        <div class="roster-grid${players.length > 16 ? ' huge' : players.length > 8 ? ' many' : ''}">${players.map((p) => `<div class="chip ${p.on ? '' : 'off'}"><span><span class="face">${esc(p.face || '')}</span> ${esc(p.name)}</span><span>${p.bot ? '🤖' : ''}</span></div>`).join('') || '<div style="color:var(--dim)">Scan the QR or open the URL on your phone</div>'}</div>
         <div class="settings">
           <label><input type="checkbox" id="optTeams" ${set.teams ? 'checked' : ''}> Team mode</label>
           <label>Rounds <select id="optRounds">${roundsOpts}</select></label>
         </div>
         <div style="display:flex;gap:14px;margin-top:auto">
-          <button class="btn alt" id="bots">🤖 Fill with bots</button>
+          <button class="btn alt" id="bots">${players.length < 6 ? '🤖 Fill with bots' : '🤖 +6 bots'}</button>
           <button class="btn" id="start" ${players.length < balance.players.min ? 'disabled' : ''}>START THE HEIST</button>
         </div>
       </div>
     </div>`;
   const sendSettings = () => sock.send({ t: 'settings', settings: { teams: $('optTeams').checked, rounds: Number($('optRounds').value) } });
   ['optTeams', 'optRounds'].forEach((id) => { $(id).onchange = sendSettings; });
-  $('bots').onclick = () => sock.send({ t: 'fill_bots', count: Math.max(1, Math.min(balance.players.max, 6) - players.length) });
+  // Fill to 6, then each press adds 6 more (up to the room maximum) to try big crews.
+  $('bots').onclick = () => sock.send({ t: 'fill_bots', count: players.length < 6 ? 6 - players.length : Math.min(6, balance.players.max - players.length) });
   $('start').onclick = () => { unlockAudio(); narrator.unlock(); sock.send({ t: 'start_game' }); };
 }
 
@@ -287,17 +330,44 @@ function updateBoard(prevPlayers) {
   if (!board) return;
   const prev = Object.fromEntries(prevPlayers.map((p) => [p.id, p]));
   const ranked = s.players.slice().sort((a, b) => (b.stash + b.wallet) - (a.stash + a.wallet));
-  board.innerHTML = '<div class="head"><span>#</span><span></span><span>CROOK</span><span style="text-align:right">WALLET</span></div>' +
-    ranked.map((p, i) => {
-      const bump = prev[p.id] && prev[p.id].wallet !== p.wallet ? ' bump' : '';
-      return `<div class="row${p.on ? '' : ' off'}${bump}"><span class="rank">${i + 1}</span><span class="face">${esc(p.face || '')}</span><span class="name">${esc(p.name)}${p.team ? ` <small style="color:var(--dim)">${esc(p.team)}</small>` : ''}</span>
+  const cols = columnsFor(ranked.length);
+  const rowHtml = (p, i) => {
+    const bump = prev[p.id] && prev[p.id].wallet !== p.wallet ? ' bump' : '';
+    return `<div class="row${p.on ? '' : ' off'}${bump}"><span class="rank">${i + 1}</span><span class="face">${esc(p.face || '')}</span><span class="name">${esc(p.name)}${p.team ? ` <small style="color:var(--dim)">${esc(p.team)}</small>` : ''}</span>
         <span class="wallet">${money(p.wallet + p.stash)}</span></div>`;
-    }).join('');
+  };
+  // v3: up to 10 crooks per column; big crews get 2-3 columns side by side.
+  board.className = 'board' + (cols > 1 ? ` multi cols${cols}` : '');
+  board.style.setProperty('--per', Math.ceil(ranked.length / cols));
+  let k = 0;
+  board.innerHTML = chunk(ranked, cols).map((part) => `<div class="bcol"><div class="head"><span>#</span><span></span><span>CROOK</span><span style="text-align:right">WALLET</span></div>${part.map((p) => rowHtml(p, k++)).join('')}</div>`).join('');
+}
+
+// v3 big crews (up to 30): split long lists into side-by-side columns of at most `per` rows.
+function columnsFor(n, per = 10) { return Math.max(1, Math.ceil(n / per)); }
+function chunk(list, cols) {
+  const size = Math.ceil(list.length / cols) || 1;
+  const out = [];
+  for (let i = 0; i < list.length; i += size) out.push(list.slice(i, i + size));
+  return out;
+}
+/** Starting vault and ~cash per completed job for a crew of n (mirrors Economy.startingBank / roundScale). */
+function economyPreview(n, rounds) {
+  const bank = Math.round(balance.bank.startPerPlayer * Math.pow(Math.max(1, n), balance.bank.crewExponent));
+  const perJob = Math.round(bank / Math.max(1, rounds) / Math.max(1, n) / balance.economy.expectedPaidJobsPerPlayer);
+  return { bank, perJob };
 }
 
 function faceOf(id) {
   const p = store.state && store.state.players.find((x) => x.id === id);
   return p ? p.face || '' : '';
+}
+
+/** Results-style tables, split into side-by-side columns for big crews. */
+function tables(rows, rowHtml) {
+  const cols = columnsFor(rows.length);
+  const parts = chunk(rows, cols);
+  return `<div class="table-cols">${parts.map((part) => `<table class="results-table" style="--rows:${Math.max(4, Math.ceil(rows.length / cols))}">${part.map(rowHtml).join('')}</table>`).join('')}</div>`;
 }
 
 function renderResults() {
@@ -306,7 +376,7 @@ function renderResults() {
   const rows = (r.table || []).slice().sort((a, b) => b.earned - a.earned);
   main.innerHTML = `<div class="center-stage" style="justify-content:flex-start">
     <h1 class="sm">ROUND ${r.round} LOOT</h1>
-    <table class="results-table" style="--rows:${rows.length}">${rows.map((p) => `<tr><td>${esc(faceOf(p.id))} ${esc(p.name)}</td><td class="num ${p.earned >= 0 ? 'plus' : 'minus'}">${p.earned >= 0 ? '+' : ''}${money(p.earned)}</td><td class="num" style="color:var(--gold)">${money(p.wallet + p.stash)}</td></tr>`).join('')}</table>
+    ${tables(rows, (p) => `<tr><td>${esc(faceOf(p.id))} ${esc(p.name)}</td><td class="num ${p.earned >= 0 ? 'plus' : 'minus'}">${p.earned >= 0 ? '+' : ''}${money(p.earned)}</td><td class="num" style="color:var(--gold)">${money(p.wallet + p.stash)}</td></tr>`)}
     <h2>${r.bounties ? `🎯 ${r.bounties} bounty hunter${r.bounties === 1 ? '' : 's'} got paid` : '🎯 No bounties this round'} · Bank ${money(r.bank)}</h2></div>`;
 }
 
@@ -315,7 +385,7 @@ function renderBetween() {
   main.innerHTML = `<div class="center-stage" style="justify-content:flex-start">
     <h1 class="sm">BREAK TIME</h1>
     <h2 class="sub">Plot your sabotage on your phone.</h2>
-    <table class="results-table" style="--rows:${s ? s.players.length : 6}">${s ? s.players.slice().sort((a, b) => (b.wallet + b.stash) - (a.wallet + a.stash)).map((p) => `<tr><td>${esc(p.face || '')} ${esc(p.name)}</td><td class="num" style="color:var(--gold)">${money(p.wallet + p.stash)}</td></tr>`).join('') : ''}</table>
+    ${s ? tables(s.players.slice().sort((a, b) => (b.wallet + b.stash) - (a.wallet + a.stash)), (p) => `<tr><td>${esc(p.face || '')} ${esc(p.name)}</td><td class="num" style="color:var(--gold)">${money(p.wallet + p.stash)}</td></tr>`) : ''}
   </div>`;
 }
 

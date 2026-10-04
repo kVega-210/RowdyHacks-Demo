@@ -82,7 +82,14 @@ public final class GameEngine {
     private long freezeStart = -1;
     private long freezeEndsAt = -1;
     private final Set<String> freezeViolators = new HashSet<>();
-    private RivalHeist rival;
+    // v3 rival duels: the live duels, who is paired with whom (rival round or rival event), and the event window.
+    private final Map<String, Duel> duels = new LinkedHashMap<>();
+    private Map<String, String> rivalOf = new HashMap<>();
+    private boolean rivalRound;
+    private final Map<String, Long> nextDuelAt = new HashMap<>();
+    private final Map<String, Integer> duelWins = new HashMap<>();
+    private long rivalEventEndsAt = -1;
+    private long rivalEventClosesAt = -1;
     private HackerVsHacker hvh;
     private Map<String, String> targets = new HashMap<>();
     private Map<String, String> teamOf = new LinkedHashMap<>();
@@ -170,7 +177,7 @@ public final class GameEngine {
             teamOf = Teams.form(b, rng, new ArrayList<>(players.keySet()), content);
             teamOf.forEach((id, t) -> players.get(id).team = t);
         }
-        ledger = new Economy.Ledger(b.l("bank.startPerPlayer") * players.size());
+        ledger = new Economy.Ledger(Economy.startingBank(b.l("bank.startPerPlayer"), players.size(), b.d("bank.crewExponent")));
         log.log(roomId, 0, null, "game_start", Json.obj("players", players.size(), "bank", ledger.bank, "settings", settings.toMap()));
         enter(Phase.BRIEFING, 1, now);
     }
@@ -192,8 +199,11 @@ public final class GameEngine {
                 openEvent(e.kind(), now, e.durationMs());
             }
             closeExpiredWindows(now);
-            for (PlayerState p : players.values()) {
-                if (p.attempt == null && p.nextAssignAt >= 0 && now >= p.nextAssignAt && p.connected) assign(p, now);
+            tickDuels(now);
+            if (rivalEventEndsAt < 0) { // jobs are on hold while a rival event runs
+                for (PlayerState p : players.values()) {
+                    if (p.attempt == null && p.nextAssignAt >= 0 && now >= p.nextAssignAt && p.connected) assign(p, now);
+                }
             }
         }
         if (phaseEndsAt >= 0 && now >= phaseEndsAt && phase != Phase.LOBBY && phase != Phase.END) advance(now);
@@ -258,12 +268,12 @@ public final class GameEngine {
         targets = Targets.assign(rng, ids, teamOf);
         players.values().forEach(p -> p.target = targets.get(p.id));
 
-        rival = null;
-        if ("rival".equals(roundType.id()) && ids.size() >= 2) {
-            List<String> pair = rng.shuffled(ids).subList(0, 2);
-            ModuleCatalog.Info g = pickGame(List.of("classic", "cyber"), true);
-            rival = new RivalHeist(pair.get(0), pair.get(1), g == null ? null : g.id(), rng.seed());
-        }
+        // v3: a rival round pairs EVERY player (the round type is only chosen with an even player count).
+        duels.clear();
+        nextDuelAt.clear();
+        duelWins.clear();
+        rivalRound = "rival".equals(roundType.id()) && ids.size() >= 2 && ids.size() % 2 == 0;
+        rivalOf = rivalRound ? pairUp(ids) : new HashMap<>();
         hvh = null;
         if (b.ints("hackerVsHacker.rounds").contains(round) && ids.size() >= 2) {
             List<String> pair = rng.shuffled(ids).subList(0, 2);
@@ -271,11 +281,12 @@ public final class GameEngine {
         }
         long base = b.ints("payout.byDifficulty").get(difficulty - 1);
         double jobs = paidJobsPerPlayer > 0 ? Math.max(1.0, paidJobsPerPlayer) : b.d("economy.expectedPaidJobsPerPlayer");
-        int earners = rival != null ? 2 : players.size();
+        int earners = players.size();
         payoutScale = Economy.roundScale(ledger.bank, totalRounds() - round + 1, overtime(), earners, base, roundType.payoutMult(),
                 jobs, b.d("economy.scaleMin"), b.d("economy.scaleMax"), b.d("economy.overtimeBoostPerRound"));
         roundSuccesses = 0;
-        plan = EventScheduler.plan(b, rng, b.l("rounds.playMs"));
+        // Rival rounds are all duels (no events); other rounds may get a rival event when the crew can be paired.
+        plan = rivalRound ? List.of() : EventScheduler.plan(b, rng, b.l("rounds.playMs"), rivalEventAllowed());
         planIdx = 0;
         freezeWarned.clear();
 
@@ -283,10 +294,8 @@ public final class GameEngine {
             PlayerState t = players.get(p.target);
             Map<String, Object> duel = null;
             boolean spectator = false;
-            if (rival != null) {
-                if (rival.isDuelist(p.id)) duel = Json.obj("opponentId", rival.opponent(p.id), "opponentName", players.get(rival.opponent(p.id)).name);
-                else spectator = true;
-            }
+            PlayerState opp = rivalRound ? players.get(rivalOf.get(p.id)) : null;
+            if (opp != null) duel = Json.obj("opponentId", opp.id, "opponentName", opp.name, "opponentFace", opp.face);
             out.toPlayer(p.id, Json.msg("round_start", "round", round, "rounds", totalRounds(), "roundType", roundType.id(),
                     "banner", roundType.banner(), "speed", speed, "difficulty", difficulty,
                     "target", t == null ? null : Json.obj("id", t.id, "name", t.name, "face", t.face),
@@ -301,15 +310,11 @@ public final class GameEngine {
 
     private void startPlay(long now) {
         playStartedAt = now;
-        for (PlayerState p : players.values()) {
-            boolean plays = rival == null || rival.isDuelist(p.id);
-            p.nextAssignAt = plays ? now : -1;
-        }
-        if (rival != null) {
-            PlayerState a = players.get(rival.a), c = players.get(rival.b);
-            out.toAll(Json.msg("rival_start", "a", Json.obj("id", a.id, "name", a.name), "b", Json.obj("id", c.id, "name", c.name),
-                    "gameId", rival.gameId, "pot", Math.min(b.l("rival.pot"), ledger.bank)));
-            out.toHosts(Json.msg("narrate", "key", "rival", "vars", Json.obj("a", a.name, "b", c.name)));
+        for (PlayerState p : players.values()) p.nextAssignAt = rivalRound ? -1 : now;
+        if (rivalRound) {
+            out.toHosts(Json.msg("rival_round", "pairs", pairsWire()));
+            out.toHosts(Json.msg("narrate", "key", "rival", "vars", Json.obj()));
+            for (String a : rivalOf.keySet()) if (a.compareTo(rivalOf.get(a)) < 0) nextDuelAt.put(a, now + 600);
         }
         if (hvh != null) {
             PlayerState h = players.get(hvh.hacker), v = players.get(hvh.victim);
@@ -323,6 +328,18 @@ public final class GameEngine {
 
     private void endPlay(long now) {
         if (freezeEndsAt >= 0) endFreeze();
+        // Unfinished duels are called off without payouts when the round ends.
+        for (Duel d : duels.values()) {
+            out.toPlayer(d.a, Json.msg("duel_end", "duelId", d.id, "aborted", true));
+            out.toPlayer(d.b, Json.msg("duel_end", "duelId", d.id, "aborted", true));
+        }
+        duels.clear();
+        nextDuelAt.clear();
+        if (rivalEventEndsAt >= 0) {
+            out.toAll(Json.msg("rival_event_end"));
+            rivalEventEndsAt = -1;
+            rivalEventClosesAt = -1;
+        }
         for (PlayerState p : players.values()) {
             p.attempt = null;
             p.nextAssignAt = -1;
@@ -330,7 +347,7 @@ public final class GameEngine {
     }
 
     private void finishRound(long now) {
-        if (rival == null && !players.isEmpty()) paidJobsPerPlayer = (double) roundSuccesses / players.size();
+        if (!rivalRound && !players.isEmpty()) paidJobsPerPlayer = (double) roundSuccesses / players.size();
         Map<String, Long> earnings = new LinkedHashMap<>();
         for (PlayerState p : players.values()) {
             long e = p.wallet - walletAtRoundStart.getOrDefault(p.id, 0L);
@@ -451,18 +468,9 @@ public final class GameEngine {
     private void assign(PlayerState p, long now) {
         ModuleCatalog.Info g;
         long seed;
-        boolean duel = rival != null && rival.isDuelist(p.id);
-        if (duel) {
-            if (rival.winner != null) {
-                p.nextAssignAt = -1;
-                return;
-            }
-            g = gameInfo(rival.gameId);
-            seed = rival.nextSeed(p.id);
-        } else {
-            g = pickGame(roundType.tags(), false);
-            seed = rng.seed();
-        }
+        boolean duel = false;
+        g = pickGame(roundType.tags(), false);
+        seed = rng.seed();
         if (g == null) {
             p.nextAssignAt = -1;
             return;
@@ -495,6 +503,14 @@ public final class GameEngine {
         Attempt a = p.attempt;
         String attemptId = Json.str(msg, "attemptId", "");
         if (a == null || !a.id().equals(attemptId)) throw new GameError("stale_attempt", "Unknown attempt");
+        if (rivalEventEndsAt >= 0) {
+            // v3: jobs are paused during a rival event (phones freeze their minigame); a result that slips in anyway
+            // doesn't count, and the player gets a fresh job when the event ends.
+            p.attempt = null;
+            p.nextAssignAt = Long.MAX_VALUE;
+            out.toPlayer(p.id, Json.msg("minigame_ack", "attemptId", a.id(), "accepted", false, "reason", "paused"));
+            return;
+        }
         p.attempt = null;
         p.nextAssignAt = now + b.l("minigame.nextAssignDelayMs");
         if (now - a.issuedAt() < b.l("minigame.minSolveMs")) {
@@ -551,26 +567,8 @@ public final class GameEngine {
                 "ms", now - a.issuedAt(), "wallet", p.wallet, "bank", ledger.bank));
         if (success && delta > 0) log.log(roomId, round, p.id, "bank_draw", Json.obj("amount", delta, "bank", ledger.bank));
 
-        if (a.duel() && rival != null && success && rival.claim(p.id)) resolveDuel(p, now);
         afterBankChange(now);
         dirty = true;
-    }
-
-    private void resolveDuel(PlayerState winner, long now) {
-        PlayerState loser = players.get(rival.opponent(winner.id));
-        long pot = Math.min(b.l("rival.pot"), ledger.bank);
-        long won = Economy.payout(ledger, winner, Math.round(pot * b.d("rival.winnerShare")));
-        long pen = loser == null ? 0 : Economy.penalty(ledger, loser, b.l("rival.loserPenalty"));
-        out.toAll(Json.msg("rival_result", "winnerId", winner.id, "winnerName", winner.name,
-                "loserId", loser == null ? null : loser.id, "loserName", loser == null ? null : loser.name, "amount", won, "penalty", pen));
-        out.toHosts(Json.msg("narrate", "key", "rival_win", "vars", Json.obj("name", winner.name)));
-        log.log(roomId, round, winner.id, "rival_win", Json.obj("loser", loser == null ? null : loser.id, "amount", won, "penalty", pen,
-                "wallet", winner.wallet, "bank", ledger.bank));
-        for (PlayerState p : players.values()) {
-            p.nextAssignAt = -1;
-            p.attempt = null;
-        }
-        phaseEndsAt = Math.min(phaseEndsAt, now + 1500);
     }
 
     private void afterBankChange(long now) {
@@ -591,6 +589,188 @@ public final class GameEngine {
         }
     }
 
+    // ------------------------------------------------------------------ v3 rival duels
+
+    /** Random pairing of everyone in {@code ids} (must be even). Returns a symmetric map: id -> opponent id. */
+    private Map<String, String> pairUp(List<String> ids) {
+        List<String> order = rng.shuffled(ids);
+        Map<String, String> m = new HashMap<>();
+        for (int i = 0; i + 1 < order.size(); i += 2) {
+            m.put(order.get(i), order.get(i + 1));
+            m.put(order.get(i + 1), order.get(i));
+        }
+        return m;
+    }
+
+    /** A rival event needs an even crew, so nobody is left without a rival. Everyone in the room counts (a phone that
+     *  blinked offline is still playing); someone who stays gone forfeits their duel after a few seconds. */
+    private boolean rivalEventAllowed() {
+        int n = players.size();
+        return n >= 2 && n % 2 == 0 && round >= b.i("rivalEvent.fromRound");
+    }
+
+    private List<Map<String, Object>> pairsWire() {
+        List<Map<String, Object>> list = new ArrayList<>();
+        for (var e : rivalOf.entrySet()) {
+            if (e.getKey().compareTo(e.getValue()) > 0) continue;
+            PlayerState a = players.get(e.getKey()), c = players.get(e.getValue());
+            if (a == null || c == null) continue;
+            list.add(Json.obj("a", Json.obj("id", a.id, "name", a.name, "face", a.face), "b", Json.obj("id", c.id, "name", c.name, "face", c.face)));
+        }
+        return list;
+    }
+
+    private Duel startDuel(String a, String c, Duel.Kind kind, boolean event, long now) {
+        Duel d = new Duel("d" + (++seq), kind, a, c, event, now, b, rng);
+        duels.put(d.id, d);
+        out.toPlayer(a, duelStartMsg(d, a, now));
+        out.toPlayer(c, duelStartMsg(d, c, now));
+        PlayerState pa = players.get(a), pc = players.get(c);
+        out.toHosts(Json.msg("duel_start", "duelId", d.id, "kind", kind.id, "name", kind.title, "event", event,
+                "a", Json.obj("id", pa.id, "name", pa.name, "face", pa.face), "b", Json.obj("id", pc.id, "name", pc.name, "face", pc.face),
+                "startsAt", d.startsAt, "endsAt", d.endsAt, "now", now));
+        log.log(roomId, round, a, "duel_start", Json.obj("duel", d.id, "kind", kind.id, "opponent", c, "event", event));
+        return d;
+    }
+
+    /** What one duelist's phone needs: the game, its opponent (face + name), timings and the shared setup. */
+    private Map<String, Object> duelStartMsg(Duel d, String pid, long now) {
+        PlayerState opp = players.get(d.opponent(pid));
+        return Json.msg("duel_start", "duelId", d.id, "kind", d.kind.id, "name", d.kind.title, "file", "/rival/" + d.kind.id + ".js",
+                "you", d.a.equals(pid) ? "a" : "b", "event", d.event,
+                "opponent", opp == null ? null : Json.obj("id", opp.id, "name", opp.name, "face", opp.face),
+                "record", Json.obj("you", duelWins.getOrDefault(pid, 0), "them", opp == null ? 0 : duelWins.getOrDefault(opp.id, 0)),
+                "pot", duelPot(), "now", now, "startsAt", d.startsAt, "endsAt", d.endsAt, "setup", d.setup());
+    }
+
+    private long duelPot() {
+        long base = b.ints("payout.byDifficulty").get(difficulty - 1);
+        return Math.max(1, Math.round(base * b.d("rival.potMult") * payoutScale));
+    }
+
+    private void onDuelInput(PlayerState p, JsonNode msg, long now) {
+        Duel d = duels.get(Json.str(msg, "duelId", ""));
+        if (d == null || !d.has(p.id)) return; // late input for a finished duel: ignore quietly
+        d.input(p.id, msg, now);
+        if (d.over()) settleDuel(d, now);
+    }
+
+    private void tickDuels(long now) {
+        long forfeitMs = b.l("rival.forfeitAfterDisconnectMs");
+        for (Duel d : new ArrayList<>(duels.values())) {
+            if (d.over()) continue;
+            for (String id : List.of(d.a, d.b)) {
+                PlayerState p = players.get(id);
+                if (p == null || (!p.connected && p.disconnectedAt >= 0 && now - p.disconnectedAt > forfeitMs)) d.forfeit(id);
+            }
+            d.tick(now);
+            if (d.over()) {
+                settleDuel(d, now);
+                continue;
+            }
+            // Live state at ~12Hz per duel (taps arrive faster than that).
+            if (d.dirty && (d.lastSentAt < 0 || now - d.lastSentAt >= 80)) {
+                Map<String, Object> st = d.state();
+                out.toPlayer(d.a, st);
+                out.toPlayer(d.b, st);
+                out.toHosts(st);
+                d.dirty = false;
+                d.lastSentAt = now;
+            }
+        }
+        // Rival round: each pair starts its next duel after a short breather, while there is time for one.
+        if (rivalRound) {
+            for (var e : nextDuelAt.entrySet()) {
+                if (e.getValue() < 0 || now < e.getValue()) continue;
+                String a = e.getKey(), c = rivalOf.get(a);
+                e.setValue(-1L);
+                if (c == null) continue;
+                List<Duel.Kind> fit = new ArrayList<>();
+                for (String g : b.strings("rival.roundGames")) {
+                    long need = b.l("rival.countdownMs") + b.l("rival.games." + g + ".durationMs") + 500;
+                    if (now + need <= phaseEndsAt) fit.add(Duel.Kind.of(g));
+                }
+                if (!fit.isEmpty()) startDuel(a, c, rng.pick(fit), false, now);
+            }
+        }
+        // Rival event: once every duel is decided (plus a moment to see the result), give the round its time back.
+        if (rivalEventEndsAt >= 0) {
+            boolean live = duels.values().stream().anyMatch(d -> d.event && !d.over());
+            if (!live && rivalEventClosesAt < 0) rivalEventClosesAt = now + b.l("rival.resultMs");
+            if (now >= rivalEventEndsAt || (rivalEventClosesAt >= 0 && now >= rivalEventClosesAt)) closeRivalEvent(now);
+        }
+    }
+
+    private void settleDuel(Duel d, long now) {
+        duels.remove(d.id);
+        PlayerState w = d.winner() == null ? null : players.get(d.winner());
+        PlayerState l = d.winner() == null ? null : players.get(d.opponent(d.winner()));
+        long won = 0, pen = 0;
+        if (w != null) {
+            won = Economy.payout(ledger, w, duelPot());
+            duelWins.merge(w.id, 1, Integer::sum);
+            w.successes++;
+        }
+        if (l != null) {
+            pen = Economy.penalty(ledger, l, b.l("rival.loserPenalty"));
+            l.fails++;
+        }
+        Map<String, Object> end = Json.msg("duel_end", "duelId", d.id, "kind", d.kind.id, "winnerId", w == null ? null : w.id,
+                "winnerName", w == null ? null : w.name, "loserId", l == null ? null : l.id, "draw", d.isDraw(), "reason", d.reason(),
+                "amount", won, "penalty", pen, "state", d.state());
+        out.toPlayer(d.a, end);
+        out.toPlayer(d.b, end);
+        out.toHosts(end);
+        if (w != null && rng.chance(0.3)) out.toHosts(Json.msg("narrate", "key", "rival_win", "vars", Json.obj("name", w.name)));
+        log.log(roomId, round, w == null ? null : w.id, "duel_end", Json.obj("duel", d.id, "kind", d.kind.id, "loser", l == null ? null : l.id,
+                "draw", d.isDraw(), "reason", d.reason(), "amount", won, "penalty", pen, "bank", ledger.bank));
+        if (rivalRound && !d.event) nextDuelAt.put(d.a.compareTo(d.b) < 0 ? d.a : d.b, now + b.l("rival.betweenDuelsMs"));
+        if (d.event && rivalEventEndsAt >= 0 && rivalEventClosesAt < 0 && duels.values().stream().noneMatch(x -> x.event && !x.over())) {
+            rivalEventClosesAt = now + b.l("rival.resultMs"); // last duel decided: show the results briefly, then resume
+        }
+        afterBankChange(now);
+        dirty = true;
+    }
+
+    /** Random mid-round event: everyone's minigame pauses, the crew is re-paired at random, and every pair duels once. */
+    private void openRivalEvent(long now) {
+        if (phase != Phase.PLAY || rivalRound || rivalEventEndsAt >= 0) return;
+        List<String> ids = new ArrayList<>(players.keySet());
+        if (ids.size() < 2 || ids.size() % 2 != 0) return; // odd crew: nobody may be left idle, so skip the event
+        rivalOf = pairUp(ids);
+        Duel.Kind kind = Duel.Kind.of(rng.pick(b.strings("rivalEvent.games")));
+        long window = b.l("rival.countdownMs") + b.l("rival.games." + kind.id + ".durationMs") + b.l("rival.resultMs");
+        // Like a Freeze, the event pauses the round: the round end and later events move back by the window.
+        phaseEndsAt += window;
+        playStartedAt += window;
+        rivalEventEndsAt = now + window;
+        rivalEventClosesAt = -1;
+        out.toAll(Json.msg("rival_event_start", "endsAt", rivalEventEndsAt, "now", now, "kind", kind.id, "name", kind.title,
+                "roundEndsAt", phaseEndsAt));
+        out.toHosts(Json.msg("rival_round", "pairs", pairsWire(), "event", true));
+        out.toHosts(Json.msg("narrate", "key", "rival", "vars", Json.obj()));
+        log.log(roomId, round, null, "rival_event", Json.obj("kind", kind.id, "pairs", ids.size() / 2));
+        for (var e : rivalOf.entrySet()) if (e.getKey().compareTo(e.getValue()) < 0) startDuel(e.getKey(), e.getValue(), kind, true, now);
+        dirty = true;
+    }
+
+    private void closeRivalEvent(long now) {
+        long unused = rivalEventEndsAt - now;
+        if (unused > 0) { // finished early: hand the unused pause back to the round
+            phaseEndsAt -= unused;
+            playStartedAt -= unused;
+        }
+        for (Duel d : new ArrayList<>(duels.values())) if (d.event) {
+            d.tick(Long.MAX_VALUE);
+            settleDuel(d, now);
+        }
+        rivalEventEndsAt = -1;
+        rivalEventClosesAt = -1;
+        for (PlayerState p : players.values()) if (p.attempt == null && p.nextAssignAt > now) p.nextAssignAt = now + 400;
+        out.toAll(Json.msg("rival_event_end", "roundEndsAt", phaseEndsAt, "now", now));
+        dirty = true;
+    }
+
     // ------------------------------------------------------------------ timed events
 
     private void openEvent(EventScheduler.Kind kind, long now, long dur) {
@@ -608,6 +788,7 @@ public final class GameEngine {
                 out.toHosts(Json.msg("narrate", "key", "freeze", "vars", Json.obj()));
                 log.log(roomId, round, null, "freeze_start", Json.obj("ms", dur));
             }
+            case RIVAL -> openRivalEvent(now);
         }
         dirty = true;
     }
@@ -643,6 +824,7 @@ public final class GameEngine {
         switch (t) {
             case "minigame_result" -> onResult(p, msg, now);
             case "freeze_violation" -> onFreezeViolation(p, now);
+            case "duel_input" -> onDuelInput(p, msg, now);
             case "sabotage" -> onSabotage(p, msg);
             case "hack_scramble" -> onScramble(p, now);
             default -> throw new GameError("unknown_intent", "Unknown message " + t);
@@ -682,6 +864,10 @@ public final class GameEngine {
         String action = Json.str(msg, "action", "");
         switch (action) {
             case "force_freeze" -> forceEvent(EventScheduler.Kind.FREEZE, now);
+            case "force_rival" -> {
+                if (phase != Phase.PLAY || rivalRound || rivalEventEndsAt >= 0) throw new GameError("wrong_phase", "Rival events fire during a normal round's play");
+                openRivalEvent(now);
+            }
             case "skip_round" -> {
                 if (phase == Phase.LOBBY || phase == Phase.END) throw new GameError("wrong_phase", "Nothing to skip");
                 phaseEndsAt = now;
@@ -742,6 +928,7 @@ public final class GameEngine {
 
     private Map<String, Object> activeEvent(long now) {
         if (freezeEndsAt >= 0) return Json.obj("type", "freeze", "endsAt", freezeEndsAt);
+        if (rivalEventEndsAt >= 0) return Json.obj("type", "rival", "endsAt", rivalEventEndsAt);
         return null;
     }
 
@@ -790,8 +977,14 @@ public final class GameEngine {
             out.toPlayer(pid, betweenMsg(p));
         }
         if (phase == Phase.PLAY && p.attempt != null) sendAssign(p);
-        if (phase == Phase.PLAY && p.attempt == null && p.nextAssignAt < 0 && (rival == null || rival.isDuelist(p.id)) && (rival == null || rival.winner == null)) {
+        if (phase == Phase.PLAY && p.attempt == null && p.nextAssignAt < 0 && !rivalRound) {
             p.nextAssignAt = now;
+        }
+        // v3: a reconnecting phone lands back in its live duel (and the rival event, if one is running).
+        if (phase == Phase.PLAY && rivalEventEndsAt >= 0) out.toPlayer(pid, Json.msg("rival_event_start", "endsAt", rivalEventEndsAt, "now", now));
+        for (Duel d : duels.values()) if (d.has(pid) && !d.over()) {
+            out.toPlayer(pid, duelStartMsg(d, pid, now));
+            out.toPlayer(pid, d.state());
         }
         if (freezeEndsAt >= 0) out.toPlayer(pid, Json.msg("freeze_start", "endsAt", freezeEndsAt, "now", now));
         if (hvh != null && hvh.hacker.equals(pid) && phase == Phase.PLAY) {
@@ -866,8 +1059,20 @@ public final class GameEngine {
         return plan;
     }
 
-    public RivalHeist rival() {
-        return rival;
+    public Map<String, Duel> duels() {
+        return duels;
+    }
+
+    public Map<String, String> rivalPairs() {
+        return rivalOf;
+    }
+
+    public boolean isRivalRound() {
+        return rivalRound;
+    }
+
+    public long rivalEventEndsAt() {
+        return rivalEventEndsAt;
     }
 
     public HackerVsHacker hvh() {

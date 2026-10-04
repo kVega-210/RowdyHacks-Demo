@@ -339,35 +339,103 @@ class GameEngineTest {
     }
 
 
-    @Test
-    void rivalRoundGivesBothDuelistsTheSameSeedsAndPaysTheFirstSuccess() {
-        TestSupport.Capture out = new TestSupport.Capture();
-        GameEngine g = TestSupport.engine(out, 61);
-        for (int i = 0; i < 4; i++) g.addPlayer("P" + i, false);
-        Clock.Manual clock = new Clock.Manual(0);
-        g.start(0);
-        int rivalRound = b.strings("roundTypes.sequence").indexOf("rival") + 1;
-        while (!(g.phase() == Phase.PLAY && g.round() == rivalRound)) {
+    private static int rivalRoundNo(Balance b) {
+        return b.strings("roundTypes.sequence").indexOf("rival") + 1;
+    }
+
+    /** Run the engine (failing every minigame quickly) until round r's play phase. */
+    private static void playUntil(GameEngine g, Clock.Manual clock, int r) {
+        while (!(g.phase() == Phase.PLAY && g.round() == r)) {
             clock.advance(100);
             g.tick(clock.now());
             for (PlayerState p : g.players().values()) if (g.phase() == Phase.PLAY && p.attempt != null && clock.now() - p.attempt.issuedAt() > 9000) {
                 g.handle(p.id, j("t", "minigame_result", "attemptId", p.attempt.id(), "success", false), clock.now());
             }
         }
-        clock.advance(50);
-        g.tick(clock.now());
-        RivalHeist r = g.rival();
-        assertNotNull(r);
-        PlayerState a = g.players().get(r.a), c = g.players().get(r.b);
-        assertEquals(a.attempt.seed(), c.attempt.seed(), "same puzzle for both duelists");
-        assertEquals(a.attempt.gameId(), c.attempt.gameId());
-        long spectators = g.players().values().stream().filter(p -> !r.isDuelist(p.id) && p.attempt != null).count();
-        assertEquals(0, spectators, "everyone else spectates");
-        long before = c.wallet;
+    }
+
+    @Test
+    void rivalRoundPairsEveryPlayerIntoLiveDuels() {
+        TestSupport.Capture out = new TestSupport.Capture();
+        GameEngine g = TestSupport.engine(out, 61);
+        for (int i = 0; i < 4; i++) g.addPlayer("P" + i, false);
+        Clock.Manual clock = new Clock.Manual(0);
+        g.start(0);
+        playUntil(g, clock, rivalRoundNo(b));
+        assertTrue(g.isRivalRound());
+        Map<String, String> pairs = g.rivalPairs();
+        assertEquals(4, pairs.size(), "everyone has a rival");
+        for (var e : pairs.entrySet()) assertEquals(e.getKey(), pairs.get(e.getValue()), "pairs are mutual");
         clock.advance(1000);
-        g.handle(c.id, j("t", "minigame_result", "attemptId", c.attempt.id(), "success", true), clock.now());
-        assertEquals(c.id, out.of("rival_result").get(0).get("winnerId"));
-        assertTrue(c.wallet > before);
+        g.tick(clock.now());
+        assertEquals(2, g.duels().size(), "both pairs duel at once");
+        for (PlayerState p : g.players().values()) assertNull(p.attempt, "no normal minigames in a rival round");
+        Map<String, Object> start = out.last("p1", "duel_start");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> opp = (Map<String, Object>) start.get("opponent");
+        assertEquals(pairs.get("p1"), opp.get("id"), "every duel shows who your opponent is");
+        assertNotNull(opp.get("face"));
+        // Decide one duel by forfeit-free play: let it time out with no input -> draw or leader; then a new duel follows.
+        Duel d = g.duels().values().iterator().next();
+        long before = g.ledger().bank;
+        clock.set(d.endsAt + 10);
+        g.tick(clock.now());
+        assertFalse(g.duels().containsKey(d.id));
+        clock.advance(b.l("rival.betweenDuelsMs") + 100);
+        g.tick(clock.now());
+        assertTrue(g.duels().values().stream().anyMatch(x -> x.has(d.a)), "the pair gets its next duel");
+        assertNull(g.invariantError());
+        assertTrue(g.ledger().bank <= before);
+    }
+
+    @Test
+    void rivalRoundsNeedAnEvenCrew() {
+        TestSupport.Capture out = new TestSupport.Capture();
+        GameEngine g = TestSupport.engine(out, 61);
+        for (int i = 0; i < 3; i++) g.addPlayer("P" + i, false);
+        Clock.Manual clock = new Clock.Manual(0);
+        g.start(0);
+        playUntil(g, clock, rivalRoundNo(b));
+        assertFalse(g.isRivalRound());
+        assertEquals("breakin", g.roundType().id(), "odd crews play a break-in instead");
+        g.admin(j("action", "force_rival"), clock.now());
+        assertTrue(g.duels().isEmpty() && g.rivalEventEndsAt() < 0, "no rival event when someone would be left idle");
+    }
+
+    @Test
+    void rivalEventPausesTheRoundAndGivesTheTimeBack() {
+        TestSupport.Capture out = new TestSupport.Capture();
+        GameEngine g = TestSupport.engine(out, 7);
+        PlayerState a = g.addPlayer("A", false);
+        g.addPlayer("B", false);
+        Clock.Manual clock = new Clock.Manual(0);
+        g.start(0);
+        while (g.phase() != Phase.PLAY) { clock.advance(50); g.tick(clock.now()); }
+        clock.advance(2000);
+        g.tick(clock.now());
+        long endBefore = g.phaseEndsAt();
+        g.admin(j("action", "force_rival"), clock.now());
+        assertEquals(1, g.duels().size());
+        long endDuring = g.phaseEndsAt();
+        assertTrue(endDuring > endBefore, "the round clock is paused for the event");
+        assertFalse(out.of("rival_event_start").isEmpty());
+        Duel d = g.duels().values().iterator().next();
+        clock.set(d.startsAt + 50);
+        // Win it: tug taps / type the word / memory / quick draw after the signal.
+        String w = d.a;
+        switch (d.kind) {
+            case TUG -> { for (int i = 0; i < 60 && !d.over(); i++) { clock.advance(100); g.handle(w, j("t", "duel_input", "duelId", d.id, "taps", 4), clock.now()); } }
+            case TYPE -> g.handle(w, j("t", "duel_input", "duelId", d.id, "done", d.setup().get("word")), clock.now());
+            case DRAW -> { clock.set((long) d.setup().get("signalAt") + 100); g.handle(w, j("t", "duel_input", "duelId", d.id, "tap", true), clock.now()); }
+            case MEMORY -> { }
+        }
+        long wallet = g.players().get(w).wallet;
+        assertTrue(wallet > 0 || d.kind == Duel.Kind.MEMORY, "the winner is paid");
+        clock.advance(b.l("rival.resultMs") + 100);
+        g.tick(clock.now());
+        assertTrue(g.rivalEventEndsAt() < 0, "event closes once every duel is decided");
+        assertTrue(g.phaseEndsAt() < endDuring, "a duel that ends early hands the unused pause back to the round");
+        assertFalse(out.of("rival_event_end").isEmpty());
         assertNull(g.invariantError());
     }
 

@@ -16,7 +16,9 @@ public final class Content {
     /** v2: player faces (flavor.json "animalFaces"); the defaults are used when the file has none. */
     public final List<String> animalFaces = new ArrayList<>();
     private static final List<String> DEFAULT_FACES = List.of("🐶", "🐱", "🐭", "🐹", "🐰", "🦊", "🐻", "🐼", "🐨", "🐯",
-            "🦁", "🐮", "🐷", "🐸", "🐵", "🐺", "🐗", "🐴", "🦄", "🐲");
+            "🦁", "🐮", "🐷", "🐸", "🐵", "🐺", "🐗", "🐴", "🦄", "🐲",
+            // v3: enough for a 30-player crew (single-codepoint animals so older phones show them too)
+            "🐔", "🐧", "🦉", "🦆", "🐙", "🦀", "🐢", "🦖", "🐝", "🦋", "🦔", "🦇", "🐊", "🦓", "🦒", "🐘");
     public final JsonNode flavor;
 
     public Content(Path root) {

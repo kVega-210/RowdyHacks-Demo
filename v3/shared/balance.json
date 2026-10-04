@@ -1,7 +1,10 @@
 {
   "_doc": "Every number the server (and clients) use lives here. See /docs/balance.md for the rationale. Times are milliseconds of game time.",
-  "players": { "min": 2, "max": 8 },
-  "bank": { "startPerPlayer": 4000, "warnAtFractions": [0.75, 0.5, 0.25] },
+  "players": { "min": 2, "max": 30 },
+  "bank": {
+    "_doc": "v3: the vault grows faster than the crew: bank = startPerPlayer x players^crewExponent. Because each round pays out ~bank / rounds left spread over the crew, an exponent above 1 also raises the cash per completed job as the crew grows (about +7% at 2 players, +40% at 30 for 1.1).",
+    "startPerPlayer": 4000, "crewExponent": 1.1, "warnAtFractions": [0.75, 0.5, 0.25]
+  },
   "rounds": {
     "count": 6,
     "briefingMs": 5000,
@@ -42,9 +45,25 @@
     "sequence": ["breakin", "hack", "breakin", "hack", "rival", "breakin"],
     "breakin": { "steal": false, "payoutMult": 1.0, "tags": ["classic"], "banner": "BREAK-IN: classic jobs. Lasers, locks and guards." },
     "hack": { "steal": false, "payoutMult": 1.25, "tags": ["cyber"], "banner": "HACK ROUND: cyber jobs, bigger payouts." },
-    "rival": { "steal": false, "payoutMult": 1.0, "tags": ["classic", "cyber"], "banner": "RIVAL HEIST: two crooks, one vault." }
+    "rival": { "steal": false, "payoutMult": 1.0, "tags": ["classic", "cyber"], "banner": "RIVAL ROUND: everyone gets a rival. Duel after duel, winner takes the pot." }
   },
-  "rival": { "pot": 600, "winnerShare": 0.75, "loserPenalty": 100 },
+  "rival": {
+    "_doc": "v3 live rival duels. Rival rounds (even player counts only) pair everyone up for duel after duel; rival events pause a normal round for one duel each. Winner's pot = payout.byDifficulty x potMult x the round's payout scale; the loser pays loserPenalty back to the bank.",
+    "potMult": 2.0,
+    "loserPenalty": 50,
+    "countdownMs": 3000,
+    "resultMs": 2500,
+    "betweenDuelsMs": 3500,
+    "forfeitAfterDisconnectMs": 5000,
+    "roundGames": ["tug-of-war", "type-race", "memory-duel", "quick-draw"],
+    "games": {
+      "tug-of-war": { "durationMs": 12000, "target": 25 },
+      "type-race": { "durationMs": 15000, "length": 6 },
+      "memory-duel": { "durationMs": 30000, "startLength": 3, "maxLevel": 8 },
+      "quick-draw": { "durationMs": 8000, "signalMinMs": 1500, "signalMaxMs": 4500 }
+    }
+  },
+  "rivalEvent": { "chancePerRound": 0.4, "fromRound": 2, "games": ["tug-of-war", "type-race", "quick-draw"] },
   "hackerVsHacker": { "rounds": [4], "scrambleMs": 5000, "scrambleStrength": 0.8, "uses": 2, "bonusPerVictimFail": 100 },
   "sabotage": {
     "perPlayerPerRound": 1,

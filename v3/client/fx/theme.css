@@ -75,3 +75,14 @@ html[data-theme="classic"] .hh-game .hh-label, html:not([data-theme]) .hh-game .
 .hh-term-line .ts, .hh-term-line.dim { color: var(--term-dim) !important; }
 .hh-term-line.good { color: var(--green) !important; }
 .hh-term-cursor { background: var(--term) !important; }
+
+/* v3 final screen: the "NAME WINS!" title glows on and off (a quick double flare, then a dim pause). */
+.winner-glow { animation: winnerGlow 2.4s ease-in-out infinite; }
+@keyframes winnerGlow {
+  0%, 100% { text-shadow: 0 6px 0 #000; filter: brightness(1); }
+  12% { text-shadow: 0 6px 0 #000, 0 0 18px var(--title), 0 0 42px var(--title), 0 0 80px var(--label-glow); filter: brightness(1.35); }
+  22% { text-shadow: 0 6px 0 #000, 0 0 6px var(--title); filter: brightness(1.05); }
+  32% { text-shadow: 0 6px 0 #000, 0 0 22px var(--title), 0 0 54px var(--title), 0 0 100px var(--label-glow); filter: brightness(1.45); }
+  50% { text-shadow: 0 6px 0 #000, 0 0 4px var(--title); filter: brightness(1); }
+}
+@media (prefers-reduced-motion: reduce) { .winner-glow { animation: none; text-shadow: 0 6px 0 #000, 0 0 18px var(--title); } }

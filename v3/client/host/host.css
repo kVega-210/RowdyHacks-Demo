@@ -66,6 +66,19 @@ button { font: inherit; cursor: pointer; }
 @keyframes bump { 40% { transform: scale(1.04); border-color: var(--gold); } }
 .board .row .face { font-size: min(32px, 5.4cqh); line-height: 1; text-align: center; }
 .chip .face { font-size: 1.15em; }
+/* v3 big crews */
+.vault-preview { font-size: min(20px, 3cqh); color: var(--dim); margin: -4px 0 10px; } .vault-preview b { color: var(--gold); }
+.roster-grid.many { grid-template-columns: repeat(3, 1fr); } .roster-grid.many .chip { font-size: min(19px, 2.9cqh); padding: min(8px, 1cqh) 10px; }
+.roster-grid.huge { grid-template-columns: repeat(4, 1fr); gap: 6px; } .roster-grid.huge .chip { font-size: min(15px, 2.3cqh); padding: min(5px, .8cqh) 8px; border-radius: 10px; }
+.roster-grid .chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.board.multi { display: grid; gap: 14px; flex-direction: initial; }
+.board.multi.cols2 { grid-template-columns: 1fr 1fr; } .board.multi.cols3 { grid-template-columns: 1fr 1fr 1fr; }
+.board .bcol { flex: 1; display: flex; flex-direction: column; gap: min(10px, 1.2cqh); min-height: 0; min-width: 0; }
+.board.multi .bcol { gap: min(6px, .8cqh); }
+.board.multi .row { grid-template-columns: 34px 34px 1fr auto; gap: 8px; padding: 0 10px; border-radius: 10px; flex: 0 1 calc((100cqh - 40px) / var(--per, 10));
+  font-size: min(20px, calc(70cqh / var(--per, 10) / 1.7)); }
+.board.multi .row .face { font-size: 1.25em; } .board.multi .head { grid-template-columns: 34px 34px 1fr auto; padding: 0 10px; font-size: min(13px, 2cqh); }
+.table-cols { display: flex; gap: 28px; justify-content: center; width: 100%; } .table-cols .results-table { flex: 1; width: auto; max-width: 1100px; }
 .board .head { display: grid; grid-template-columns: 56px 48px 1fr 200px; gap: 12px; padding: 0 18px; color: var(--dim); font-size: 16px; font-weight: 800; letter-spacing: .1em; }
 .side { display: flex; flex-direction: column; gap: 14px; min-height: 0; }
 .panel { background: var(--panel); border: 2px solid var(--line); border-radius: 18px; padding: 14px 16px; }
@@ -118,6 +131,7 @@ button { font: inherit; cursor: pointer; }
 .podium .step { width: min(260px, 30cqh); background: var(--panel); border: 3px solid var(--line); border-radius: 20px 20px 0 0; text-align: center; padding: min(18px, 1.6cqh); font-size: min(32px, 4.2cqh); font-weight: 900; }
 .podium .p1 { height: min(300px, 30cqh); border-color: var(--gold); background: #2e2709; } .podium .p2 { height: min(230px, 24cqh); } .podium .p3 { height: min(180px, 19cqh); }
 .podium .medal { font-size: min(64px, 7cqh); }
+.podium .step .nm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .roast { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 14px; width: 100%; flex: 1; min-height: 0; overflow: hidden; align-content: start; }
 .roast .panel { font-size: min(19px, 2.8cqh); }
 .awards { display: flex; gap: 16px; font-size: min(26px, 3.4cqh); }

@@ -11,10 +11,10 @@ export function standings(ctx) {
   const top = [rows[1], rows[0], rows[2]];
   const roastBox = h('div', { class: 'card', id: 'roast' }, h('h2', {}, '🎤 The Mastermind roasts you'), h('div', { class: 'muted' }, 'Loading roast...'));
   view(
-    h('div', { class: 'banner' }, f.winnerId === s.playerId ? '👑 YOU WIN! 👑' : `${f.winnerName} wins!`),
+    h('div', { class: 'banner winner-glow' }, f.winnerId === s.playerId ? '👑 YOU WIN! 👑' : `${f.winnerName} WINS!`),
     me ? h('div', { class: 'card center' }, h('div', { class: 'muted' }, 'Your stash'), h('div', { class: 'payout' }, money(me.stash)),
       h('div', {}, `#${me.rank} of ${rows.length}`)) : null,
-    h('div', { class: 'podium' }, top.map((r, i) => (r ? h('div', { class: ['p2', 'p1', 'p3'][i] }, h('div', {}, ['🥈', '🥇', '🥉'][i], ' ', r.face || ''), r.name, h('div', {}, money(r.stash))) : h('div', { style: { visibility: 'hidden' } })))),
+    h('div', { class: 'podium' }, top.map((r, i) => (r ? h('div', { class: ['p2', 'p1', 'p3'][i] }, h('div', {}, ['🥈', '🥇', '🥉'][i], ' ', r.face || ''), h('div', { style: { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, r.name), h('div', {}, money(r.stash))) : h('div', { style: { visibility: 'hidden' } })))),
     f.winningTeam ? h('div', { class: 'card center' }, `Winning crew: ${f.winningTeam}`) : null,
     h('div', { class: 'card' }, h('ul', { class: 'roster' }, rows.map((r) => h('li', { class: r.id === s.playerId ? 'me' : '' },
       h('span', {}, `#${r.rank} ${r.face || ''} ${r.name}`), h('span', {}, money(r.stash)))))),

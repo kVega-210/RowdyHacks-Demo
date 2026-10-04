@@ -48,6 +48,11 @@ public final class Economy {
         return w;
     }
 
+    /** v3: the starting vault for a crew of {@code players}: perPlayer x players^exponent (bigger crews, bigger vault). */
+    public static long startingBank(long perPlayer, int players, double exponent) {
+        return Math.round(perPlayer * Math.pow(Math.max(1, players), exponent));
+    }
+
     /** Success payout before the bank cap: base by difficulty x round-type multiplier x score x wager. */
     public static long successAmount(long base, double roundMult, double scoreMult, double wagerMult) {
         return Math.round(base * roundMult * scoreMult * wagerMult);

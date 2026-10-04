@@ -2,6 +2,8 @@
 
 export type Phase = 'lobby' | 'briefing' | 'play' | 'results' | 'between' | 'end'; // v2: no escape phase
 export type RoundTypeId = 'breakin' | 'hack' | 'rival';
+export type DuelKind = 'tug-of-war' | 'type-race' | 'memory-duel' | 'quick-draw';
+export interface Face { id: string; name: string; face: string }
 export type ModifierId = 'shrunken-buttons' | 'screen-jitter' | 'false-alarm' | 'jam-the-signal';
 
 export interface Settings { teams?: boolean; rounds?: number; games?: string[] | null; seed?: number; }
@@ -22,10 +24,11 @@ export type Intent =
   | { t: 'resume'; room: string; token: string }
   | { t: 'leave' } | { t: 'ping' }
   | { t: 'start_game' } | { t: 'settings'; settings: Settings } | { t: 'fill_bots'; count?: number }
-  | { t: 'admin'; action: 'force_freeze' | 'skip_round' | 'set_bank' | 'grant' | 'kick' | 'end_game'; amount?: number; playerId?: string }
+  | { t: 'admin'; action: 'force_freeze' | 'force_rival' | 'skip_round' | 'set_bank' | 'grant' | 'kick' | 'end_game'; amount?: number; playerId?: string }
   | { t: 'minigame_result'; attemptId: string; success: boolean; scoreMultiplier?: number; reason?: string; wager?: WagerPick; nerves?: { calm: boolean } }
   | { t: 'freeze_violation' } | { t: 'hack_scramble' }
-  | { t: 'sabotage'; targetId: string; modifier: ModifierId };
+  | { t: 'sabotage'; targetId: string; modifier: ModifierId }
+  | { t: 'duel_input'; duelId: string; taps?: number; progress?: number; done?: string; level?: number; keys?: number[]; tap?: boolean };
 
 // ---- server -> client
 export type ErrorCode = 'bad_json' | 'rate_limited' | 'not_joined' | 'no_room' | 'bad_token' | 'room_full' | 'game_in_progress'
@@ -51,8 +54,15 @@ export type ServerMessage =
   | { t: 'between'; nextRound: number; overtime: number; sabotage: boolean; modifiers: ModifierId[]; immune: string[]; endsAt: number }
   | { t: 'sabotage_ack'; targetId: string; targetName: string; targetFace: string; modifier: ModifierId }
   | { t: 'modifier_apply' } & ModifierSpec
-  | { t: 'rival_start'; a: { id: string; name: string }; b: { id: string; name: string }; gameId: string; pot: number }
-  | { t: 'rival_result'; winnerId: string; winnerName: string; loserId?: string; loserName?: string; amount: number; penalty: number }
+  // v3 live rival duels (rival rounds and rival events)
+  | { t: 'duel_start'; duelId: string; kind: DuelKind; name: string; file: string; you: 'a' | 'b'; event: boolean; opponent: Face;
+      record: { you: number; them: number }; pot: number; now: number; startsAt: number; endsAt: number; setup: Record<string, unknown> }
+  | { t: 'duel_state'; duelId: string; rope?: number; a: { progress?: number; level?: number }; b: { progress?: number; level?: number }; bar: number }
+  | { t: 'duel_end'; duelId: string; aborted?: boolean; kind?: DuelKind; winnerId?: string; winnerName?: string; loserId?: string; draw?: boolean;
+      reason?: string; amount?: number; penalty?: number }
+  | { t: 'rival_event_start'; endsAt: number; now: number; kind: DuelKind; name: string; roundEndsAt: number }
+  | { t: 'rival_event_end'; roundEndsAt: number; now: number }
+  | { t: 'rival_round'; pairs: { a: Face; b: Face }[]; event?: boolean }
   | { t: 'hvh_start'; hackerName: string; victimName: string } | { t: 'hvh_power'; victimId: string; victimName: string; victimFace: string; uses: number; scrambleMs: number }
   | { t: 'hvh_ack'; usesLeft: number } | { t: 'hvh_bonus'; amount: number }
   | { t: 'teams_update'; teams: Record<string, string>; swapped: [string, string] }

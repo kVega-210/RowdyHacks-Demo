@@ -27,6 +27,15 @@ const CSS = `
 .sab-pick{margin-top:6px;font-size:13px;color:var(--dim);min-height:17px;text-align:center}
 .sab .big-btn{min-height:52px;margin-top:6px;font-size:20px}
 .face-name{font-size:20px;margin-right:6px}
+/* v3 big crews (9+ rivals): tricks in one row on top, faces in a full-width grid below */
+.sab.big .sab-cols{grid-template-columns:1fr}
+.sab.big .sab-mods{grid-template-columns:repeat(4,1fr)}
+.sab.big .sab-mod{flex-direction:column;justify-content:center;gap:0;min-height:52px;padding:4px 2px;font-size:11px;text-align:center}
+.sab.big .sab-faces{grid-template-columns:repeat(auto-fill,minmax(31px,1fr));gap:3px}
+.sab.big .sab-face{font-size:18px;border-radius:8px;border-width:1.5px}
+.sab.big .sab-face[disabled]::after{font-size:11px;right:-2px;bottom:-2px}
+.sab.big{padding:8px}.sab.big h2{margin-bottom:2px}.sab.big .sab-pick{margin-top:2px;min-height:0}.sab.big .big-btn{min-height:46px;margin-top:4px}
+@media (max-height:700px){.sab.big .sab-mod{min-height:44px}}
 `;
 let styled = false;
 
@@ -63,11 +72,11 @@ export async function render(ctx) {
         : immune.size ? '🛡️ = hit last round, safe for now' : 'One per round. It hits one of their next jobs.';
     };
     draw();
-    parts.push(h('div', { class: 'card sab' },
+    parts.push(h('div', { class: 'card sab' + (others.length > 8 ? ' big' : '') },
       h('h2', {}, '😈 Sabotage', h('small', {}, 'one per break')),
-      h('div', { class: 'sab-cols' },
-        h('div', { class: 'sab-col' }, h('small', {}, 'Victim'), fBox),
-        h('div', { class: 'sab-col' }, h('small', {}, 'Dirty trick'), mBox)),
+      h('div', { class: 'sab-cols' }, ...(others.length > 8
+        ? [h('div', { class: 'sab-col' }, h('small', {}, 'Dirty trick'), mBox), h('div', { class: 'sab-col' }, h('small', {}, 'Victim'), fBox)]
+        : [h('div', { class: 'sab-col' }, h('small', {}, 'Victim'), fBox), h('div', { class: 'sab-col' }, h('small', {}, 'Dirty trick'), mBox)])),
       pick,
       bigBtn('SABOTAGE!', () => {
         if (!target || !mod) return ctx.toast('Pick a face and a trick', 'bad');

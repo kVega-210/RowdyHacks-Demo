@@ -15,7 +15,7 @@ import java.util.List;
 public final class EventScheduler {
     private EventScheduler() {}
 
-    public enum Kind { FREEZE }
+    public enum Kind { FREEZE, RIVAL }
 
     public record Scheduled(Kind kind, long atMs, long durationMs) {
         public long endMs() {
@@ -26,11 +26,23 @@ public final class EventScheduler {
     public static long duration(Balance b, Kind k) {
         return switch (k) {
             case FREEZE -> b.l("freeze.windowMs");
+            // v3 rival event: room for the longest event duel (countdown + duel + result).
+            case RIVAL -> {
+                long longest = 0;
+                for (String g : b.strings("rivalEvent.games")) longest = Math.max(longest, b.l("rival.games." + g + ".durationMs"));
+                yield b.l("rival.countdownMs") + longest + b.l("rival.resultMs");
+            }
         };
     }
 
     public static List<Scheduled> plan(Balance b, Rng rng, long playMs) {
+        return plan(b, rng, playMs, false);
+    }
+
+    /** rivalAllowed: the crew can be fully paired (even count) and it is late enough in the game for a rival event. */
+    public static List<Scheduled> plan(Balance b, Rng rng, long playMs, boolean rivalAllowed) {
         List<Kind> kinds = new ArrayList<>();
+        if (rivalAllowed && rng.chance(b.d("rivalEvent.chancePerRound"))) kinds.add(Kind.RIVAL);
         if (rng.chance(b.d("freeze.chancePerRound"))) kinds.add(Kind.FREEZE);
         kinds = rng.shuffled(kinds);
 

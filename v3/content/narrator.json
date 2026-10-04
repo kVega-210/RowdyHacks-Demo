@@ -94,12 +94,12 @@
     {
       "id": "round_rival_1",
       "event": "round_rival",
-      "text": "Rival heist. Two crooks, one vault. Everyone else: grab popcorn."
+      "text": "Rival round. Everybody gets a nemesis. Pull, type, remember, draw."
     },
     {
       "id": "round_rival_2",
       "event": "round_rival",
-      "text": "It's a showdown. Winner takes most of the pot."
+      "text": "It's a showdown. Every duel pays the winner."
     },
     {
       "id": "steal_1",
@@ -289,7 +289,7 @@
     {
       "id": "rival_win_2",
       "event": "rival_win",
-      "text": "The rival heist is over. The loser pays."
+      "text": "Duel over. The loser pays."
     },
     {
       "id": "hvh_1",

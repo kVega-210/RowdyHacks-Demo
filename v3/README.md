@@ -33,6 +33,25 @@ HEIST_TIME_SCALE=4 PORT=7173 ./run.sh           # sped-up server, then:
 node scripts/browser-check/e2e.mjs http://localhost:7173   # host + phone + bots full game
 ```
 
+## Rival duels (v3)
+- **Rival rounds** (round 5 by default) happen only with an **even** crew: everyone is paired at random and duels their
+  rival back to back for the whole round. Odd crews get a normal break-in instead, so nobody sits idle.
+- **Rival events** are a random mid-round event (40% of rounds from round 2, even crews only): jobs pause, everyone is
+  re-paired at random and every pair plays one duel at the same time, then jobs resume and the round gets its time back.
+- **Four live duel games** (`client/rival/`), refereed by the server (`server/.../game/Duel.java`):
+  **Tug of War** (mash PULL!), **Type Race** (same password, keypad, wrong key knocks you back), **Memory Duel**
+  (Simon sequence grows each level, first slip loses) and **Quick Draw** (tap after DRAW!, early = foul).
+  Every duel shows your opponent's face and name; the host shows every pair live.
+- Winner gets `payout.byDifficulty x rival.potMult x the round's payout scale`; the loser pays `rival.loserPenalty`
+  back to the bank. All timings are under `rival` / `rivalEvent` in `shared/balance.json`.
+
+## Up to 30 players
+- `players.max` is 30. Bigger crews get a bigger vault **and** more cash per job: bank =
+  `startPerPlayer x players^crewExponent` (1.1), and each round pays roughly bank / rounds left spread over the crew.
+  The host lobby shows the vault and the ≈ pay per job as people join.
+- The host scoreboard and result tables split into columns of 10, the duel board compacts, the phone sabotage picker
+  switches to a full-width face grid, and there are 36 animal faces. "🤖 +6 bots" keeps adding bots to try big crews.
+
 ## Phones can't load the game?
 - **Brave:** with Shields' "Upgrade connections to HTTPS" on Strict, Brave shows a warning for the game's plain
   `http://` LAN address. Tap **Continue**, or turn Shields off for that address.

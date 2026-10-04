@@ -8,6 +8,7 @@ import * as ov from './overlays/overlays.js';
 import * as between from './between/between.js';
 import * as target from './target/target.js';
 import * as final from './final/final.js';
+import * as duel from './duel/duel.js';
 import { sfx, unlockAudio } from '../fx/sfx.js';
 import { createTerminal } from '../fx/terminal.js';
 import { sirenRise, sirenClear } from '../fx/siren.js';
@@ -98,8 +99,7 @@ function handle(m) {
       if (m.overtime) L(`OVERTIME ${m.overtime}: THE BANK STILL HAS CASH. PAYOUTS UP!`, 'warn');
       L('SECRET TARGET ACQUIRED. HOLD 🎯 TO VIEW.', 'dim');
       if (m.modifiers && m.modifiers.length) L('WARNING: SABOTAGE DETECTED ON YOUR TERMINAL', 'bad');
-      if (m.duel) L(`RIVAL HEIST VS ${m.duel.opponentName}`, 'warn');
-      if (m.spectator) L('RIVAL HEIST IN PROGRESS. SPECTATING.', 'dim');
+      if (m.duel) L(`RIVAL ROUND. YOUR RIVAL: ${m.duel.opponentFace || ''} ${m.duel.opponentName}`, 'warn');
       if (m.hacker) L('SCRAMBLE POWER GRANTED', 'warn');
       if (store.phase === 'briefing') renderPhase();
       break;
@@ -109,7 +109,7 @@ function handle(m) {
       if (store.phase === 'play') { view(); runner.run(m); }
       break;
     case 'minigame_ack':
-      if (m.accepted === false) { toast('Too fast! Nice try.', 'bad'); L('RESULT REJECTED: TOO FAST', 'bad'); }
+      if (m.accepted === false) { if (m.reason !== 'paused') { toast('Too fast! Nice try.', 'bad'); L('RESULT REJECTED: TOO FAST', 'bad'); } }
       else if (m.success) { toast(`+${money(m.delta)}`, 'good', 1200); L(`JOB COMPLETE +${money(m.delta)}  WALLET ${money(m.wallet)}`, 'good'); }
       else { toast(m.delta ? `${money(m.delta)}` : 'Fail!', 'bad', 1200); L(`JOB FAILED ${m.delta ? money(m.delta) : ''}  WALLET ${money(m.wallet)}`, 'bad'); }
       if (store.phase === 'play' && store.assign && store.assign.attemptId === m.attemptId) runner.waiting();
@@ -149,9 +149,38 @@ function handle(m) {
     case 'hvh_power': showScramble(m); break;
     case 'hvh_ack': store.hvh && (store.hvh.uses = m.usesLeft); showScramble(store.hvh); break;
     case 'hvh_bonus': toast(`Scramble paid off: +${money(m.amount)}`, 'good'); L(`SCRAMBLE BONUS +${money(m.amount)}`, 'good'); break;
-    case 'rival_start': store.rival = m; if (store.phase === 'play') renderPhase(); break;
-    case 'rival_result':
-      toast(m.winnerId === store.playerId ? `You won the showdown! +${money(m.amount)}` : `${m.winnerName} won the showdown`, m.winnerId === store.playerId ? 'good' : 'gold', 3500);
+    // v3 rival duels
+    case 'duel_start':
+      L(`${m.event ? 'RIVAL EVENT' : 'DUEL'}: ${String(m.name).toUpperCase()} VS ${m.opponent ? `${m.opponent.face} ${m.opponent.name}` : '?'}`, 'warn');
+      duel.start(ctx, m);
+      break;
+    case 'duel_state': duel.state(m); break;
+    case 'duel_end':
+      if (!m.aborted) {
+        const won = m.winnerId === store.playerId;
+        L(m.draw || !m.winnerId ? 'DUEL DRAWN' : won ? `DUEL WON +${money(m.amount)}` : `DUEL LOST ${m.penalty ? '-' + money(m.penalty) : ''}`, m.draw ? 'dim' : won ? 'good' : 'bad');
+      }
+      duel.end(ctx, m, () => {
+        if (store.phase !== 'play') return;
+        if (store.rivalEvent) { // other pairs are still dueling: stay paused until the event ends
+          ov.show(h('div', { class: 'ov freeze' }, h('h1', { style: { fontSize: '40px' } }, '⚔️'), h('p', { style: { fontSize: '20px', fontWeight: 900 } }, 'Waiting for the other duels...')));
+        } else if (store.round && store.round.duel) renderPhase();
+      });
+      break;
+    case 'rival_event_start':
+      // Like a Freeze, the round clock pauses while everyone duels.
+      store.freezeEndsAt = m.endsAt;
+      store.rivalEvent = true;
+      if (store.state && m.roundEndsAt) store.state.endsAt = m.roundEndsAt;
+      L('RIVAL EVENT! EVERYONE GETS A RIVAL. JOBS PAUSED.', 'warn');
+      sfx.play('alarm');
+      break;
+    case 'rival_event_end':
+      store.freezeEndsAt = 0;
+      store.rivalEvent = false;
+      if (store.state && m.roundEndsAt) store.state.endsAt = m.roundEndsAt;
+      if (!duel.active() && ov.isOpen()) ov.close(); // drop the "waiting for the other duels" screen
+      L('RIVAL EVENT OVER. BACK TO WORK.', 'dim');
       break;
     case 'final_standings': {
       store.final = m;
@@ -196,7 +225,8 @@ function applyPhase(m) {
   if (store.state) Object.assign(store.state, { phase: m.phase, round: m.round, endsAt: m.endsAt });
   if (m.phase !== 'play') { runner.hide(); removeScramble(); }
   if (m.phase === 'play' && prev !== 'play') store.assign = null;
-  if (m.phase === 'briefing') { store.rival = null; store.hvh = null; }
+  if (m.phase === 'briefing') store.hvh = null;
+  if (m.phase !== 'play') { duel.stop(); store.rivalEvent = false; }
   ov.close();
 }
 
@@ -209,11 +239,13 @@ function renderPhase() {
     case 'lobby': return renderLobby();
     case 'briefing': return renderBriefing();
     case 'play':
-      if (s.round && s.round.spectator) {
+      if (s.round && s.round.duel) { // v3 rival round: duel after duel against one rival
         runner.hide();
-        const r = s.rival;
-        return view(h('div', { class: 'wait' }, h('b', {}, '🍿 Rival Heist'),
-          r ? `${r.a.name} vs ${r.b.name} on ${r.gameId}. Watch the big screen!` : 'Two crooks are dueling. Watch the big screen!'));
+        if (duel.active()) return undefined;
+        const o = s.round.duel;
+        return view(h('div', { class: 'wait' }, h('b', {}, '⚔️ Rival round'),
+          h('div', { style: { fontSize: '56px', margin: '8px 0' } }, `${(s.me && s.me.face) || s.face || ''} vs ${o.opponentFace || ''}`),
+          `Your rival: ${o.opponentName}. Next duel coming up...`));
       }
       view();
       if (s.assign && runner.attemptId === s.assign.attemptId) return undefined;
@@ -251,8 +283,11 @@ function renderBriefing() {
     target.briefingReveal(r)];
   if (r && r.modifiers && r.modifiers.length) parts.push(h('div', { class: 'card center', style: { borderColor: 'var(--red)' } }, '😈 Someone sabotaged you! Expect trouble.'));
   if (r && r.overtime) parts.push(h('div', { class: 'card center', style: { borderColor: 'var(--gold)' } }, '💰 The bank still has cash! Overtime pays out bigger until it is empty.'));
-  if (r && r.duel) parts.push(h('div', { class: 'card center', style: { borderColor: 'var(--gold)' } }, `⚔️ You're in the Rival Heist vs ${r.duel.opponentName}! First to crack it wins the pot.`));
-  if (r && r.spectator) parts.push(h('div', { class: 'card center' }, '🍿 Rival Heist: you are spectating this round.'));
+  if (r && r.duel) parts.push(h('div', { class: 'card center', style: { borderColor: 'var(--gold)' } },
+    h('div', { class: 'muted' }, 'YOUR RIVAL THIS ROUND'),
+    h('div', { style: { fontSize: '48px', lineHeight: 1.1 } }, r.duel.opponentFace || '⚔️'),
+    h('div', { style: { fontSize: '22px', fontWeight: 900 } }, r.duel.opponentName),
+    h('div', { class: 'muted' }, 'Tug of war, type races, memory and quick draws. Every duel pays the winner.')));
   if (r && r.hacker) parts.push(h('div', { class: 'card center', style: { borderColor: '#c77dff' } }, '💻 You have the SCRAMBLE power this round!'));
   if (s.state && s.state.endsAt > 0) parts.push(countdown(sock, s.state.endsAt));
   view(...parts);

@@ -8,9 +8,9 @@ export function render(main, f, roast, room) {
   const medals = ['🥈', '🥇', '🥉'];
   main.innerHTML = `
     <div class="center-stage" style="justify-content:flex-start">
-      <h1>${esc(f.winnerName || '?')} WINS!</h1>
+      <h1 class="winner-glow">${esc(f.winnerName || '?')} WINS!</h1>
       ${f.winningTeam ? `<h2>Winning crew: ${esc(f.winningTeam)}</h2>` : ''}
-      <div class="podium">${top.map((r, i) => (r ? `<div class="step p${[2, 1, 3][i]}"><div class="medal">${medals[i]} ${esc(r.face || '')}</div>${esc(r.name)}<div style="color:var(--gold)">${money(r.stash)}</div></div>` : '<div class="step" style="visibility:hidden"></div>')).join('')}</div>
+      <div class="podium">${top.map((r, i) => (r ? `<div class="step p${[2, 1, 3][i]}"><div class="medal">${medals[i]} ${esc(r.face || '')}</div><div class="nm">${esc(r.name)}</div><div style="color:var(--gold)">${money(r.stash)}</div></div>` : '<div class="step" style="visibility:hidden"></div>')).join('')}</div>
       <div class="awards" id="awards"></div>
       <div class="roast" id="roast"><div class="panel">🎤 The Mastermind is preparing the roast...</div></div>
       <div class="final-foot">Replay: ${esc(location.origin)}/replay/?room=${esc(room)} · <a href="/host/" style="color:var(--cyan)">New heist</a></div>

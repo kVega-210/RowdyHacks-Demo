@@ -57,6 +57,17 @@ class EconomyTest {
     }
 
     @Test
+    void biggerCrewsGetABiggerVaultAndMoreCashPerJob() {
+        long two = Economy.startingBank(4000, 2, 1.1), thirty = Economy.startingBank(4000, 30, 1.1);
+        assertTrue(thirty > 15 * two, "the vault grows faster than the crew");
+        // Per-job pay in round 1 = this round's share of the vault spread over the crew's expected jobs.
+        double perJob2 = Economy.roundScale(two, 6, 0, 2, 100, 1.0, 3, 0.5, 8, 0.75);
+        double perJob30 = Economy.roundScale(thirty, 6, 0, 30, 100, 1.0, 3, 0.5, 8, 0.75);
+        assertTrue(perJob30 > perJob2 * 1.25, "each completed job pays more in a big crew: " + perJob2 + " vs " + perJob30);
+        assertEquals(8000, Economy.startingBank(4000, 2, 1.0), "exponent 1 = the old flat per-player vault");
+    }
+
+    @Test
     void successAmountScales() {
         assertEquals(300, Economy.successAmount(200, 1.5, 1.0, 1.0));
         assertEquals(700, Economy.successAmount(200, 1.0, 1.0, 3.5));

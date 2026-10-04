@@ -141,6 +141,65 @@ public final class Bot {
         }, real, TimeUnit.MILLISECONDS);
     }
 
+    // v3 rival duels: play like a decent but beatable human.
+    private volatile String duelId;
+
+    private void playDuel(JsonNode m) {
+        String id = Json.str(m, "duelId", "");
+        duelId = id;
+        long now = m.path("now").asLong(), startsAt = m.path("startsAt").asLong(), endsAt = m.path("endsAt").asLong();
+        long go = Math.max(0, startsAt - now);
+        JsonNode setup = m.path("setup");
+        switch (Json.str(m, "kind", "")) {
+            case "tug-of-war" -> later(go + 150, new Runnable() {
+                long t = go + 150;
+
+                public void run() {
+                    if (!id.equals(duelId) || t > endsAt - now) return;
+                    send(Json.msg("duel_input", "duelId", id, "taps", 1 + rnd.nextInt(2)));
+                    long step = 110 + rnd.nextInt(90);
+                    t += step;
+                    later(step, this);
+                }
+            });
+            case "type-race" -> {
+                String word = setup.path("word").asText("");
+                long t = go;
+                for (int i = 1; i <= word.length(); i++) {
+                    t += 450 + rnd.nextInt(500);
+                    final int prog = i;
+                    later(t, () -> {
+                        if (!id.equals(duelId)) return;
+                        if (prog < word.length()) send(Json.msg("duel_input", "duelId", id, "progress", prog));
+                        else send(Json.msg("duel_input", "duelId", id, "done", word));
+                    });
+                }
+            }
+            case "memory-duel" -> {
+                List<Integer> seq = new ArrayList<>();
+                setup.path("seq").forEach(x -> seq.add(x.asInt()));
+                int start = setup.path("startLength").asInt(3), max = setup.path("maxLevel").asInt(8);
+                long t = go;
+                for (int level = 1; level <= max; level++) {
+                    int len = start + level - 1;
+                    t += len * 550L + 700 + len * 380L;
+                    boolean ok = rnd.nextDouble() < 0.95 - 0.07 * level;
+                    List<Integer> keys = new ArrayList<>(seq.subList(0, len));
+                    if (!ok) keys.set(len - 1, (keys.get(len - 1) + 1) % 4);
+                    final int lv = level;
+                    later(t, () -> { if (id.equals(duelId)) send(Json.msg("duel_input", "duelId", id, "level", lv, "keys", keys)); });
+                    if (!ok) break;
+                }
+            }
+            case "quick-draw" -> {
+                long signal = setup.path("signalAt").asLong() - now;
+                long at = rnd.nextDouble() < 0.07 ? Math.max(go, signal - 400) : signal + 220 + rnd.nextInt(450);
+                later(at, () -> { if (id.equals(duelId)) send(Json.msg("duel_input", "duelId", id, "tap", true)); });
+            }
+            default -> { }
+        }
+    }
+
     private long think() {
         return cfg.thinkMinMs + (long) (rnd.nextDouble() * (cfg.thinkMaxMs - cfg.thinkMinMs));
     }
@@ -192,6 +251,8 @@ public final class Bot {
                             "wager", Json.obj("tier", String.valueOf(1 + rnd.nextInt(3)))));
                 });
             }
+            case "duel_start" -> playDuel(m);
+            case "duel_end" -> { if (Json.str(m, "duelId", "").equals(duelId)) duelId = null; }
             case "freeze_start" -> {
                 if (rnd.nextDouble() < cfg.freezeViolationChance) later(rnd.nextInt(2000), () -> send(Json.msg("freeze_violation")));
             }
