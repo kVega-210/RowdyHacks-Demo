@@ -37,7 +37,7 @@ public final class Roast {
     String prompt(Map<String, Object> facts) {
         return """
                 You are "The Mastermind", the smug narrator of HEIST HAVOC!, a party game where friends play minigames on \
-                their phones, steal each other's cash with real keys and race to escape. Roast each player in a playful, \
+                their phones, sabotage each other and drain the bank until it is empty. Roast each player in a playful, \
                 PG-13, never cruel way based ONLY on these facts. No profanity, no slurs, nothing about appearance, \
                 identity or real-life traits. Each line under 110 characters.
                 Return JSON exactly like: {"players":[{"name":"...","lines":["...","...","...","..."]}],\
@@ -74,17 +74,17 @@ public final class Roast {
         List<Map<String, Object>> players = new ArrayList<>();
         for (Map<String, Object> f : (List<Map<String, Object>>) facts.get("players")) {
             String n = (String) f.get("name");
-            long wins = (Long) f.get("wins"), fails = (Long) f.get("fails"), steals = (Long) f.get("stealsMade");
-            long robbed = (Long) f.get("timesRobbed"), lost = (Long) f.get("lostAtEnd");
+            long wins = (Long) f.get("wins"), fails = (Long) f.get("fails");
+            long frozen = (Long) f.get("freezeViolations"), streak = (Long) f.get("bestStreak");
             List<String> lines = new ArrayList<>();
             lines.add(n + " cracked " + wins + " locks and fumbled " + fails + ". The vault sends its regards.");
-            lines.add(steals > 0 ? n + " pickpocketed the crew " + steals + " time" + (steals == 1 ? "" : "s") + ". Trust issues: earned."
-                    : n + " never stole a thing. Are you a heist crew member or a tourist?");
-            lines.add(robbed > 0 ? n + " got robbed " + robbed + " time" + (robbed == 1 ? "" : "s") + ". Maybe guard your key next time."
-                    : n + " kept that key closer than a secret recipe.");
+            // v2: no stealing, so the roast leans on freezes and streaks instead.
+            lines.add(frozen > 0 ? n + " twitched during " + frozen + " freeze" + (frozen == 1 ? "" : "s") + ". The cameras loved it."
+                    : n + " froze like a statue every time. Suspiciously good at standing still.");
+            lines.add(streak >= 3 ? n + " hit a " + streak + "-job streak. Somebody call the insurance company."
+                    : n + " never strung three jobs together. Consistency is a myth.");
             if (f.get("worstGame") != null) lines.add(n + "'s nemesis: " + f.get("worstGame") + ". It wins. Every time.");
-            if (lost > 0) lines.add(n + " forgot to escape and left $" + lost + " on the table. Bold.");
-            else if (Boolean.TRUE.equals(f.get("escaped"))) lines.add(n + " made it out. The getaway car was mostly paperwork.");
+            lines.add(n + " made it out. The getaway car was mostly paperwork.");
             while (lines.size() < b.i("ai.roastLinesMin")) lines.add("The Mastermind has reviewed " + n + "'s performance. No further questions.");
             players.add(Json.obj("name", n, "lines", lines.subList(0, Math.min(lines.size(), b.i("ai.roastLinesMax")))));
         }
