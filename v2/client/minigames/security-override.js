@@ -18,31 +18,38 @@ export function mount(container, opts) {
   const g = game(container, opts, { id: meta.id, title: meta.name, hint: 'Memorise the commands...', timeMs: 13000 });
   const n = byD(g, 3, 4, 5);
   const pool = CMDS.slice(0, byD(g, 4, 4, 6));
-  const seq = Array.from({ length: n }, () => g.r.int(pool.length));
-  const screen = h('div', { class: 'so-screen' }, 'STAND BY');
+  // Never the same command twice in a row: pick from the pool minus the previous one.
+  const seq = [];
+  for (let k = 0; k < n; k++) {
+    let c = g.r.int(pool.length - (k ? 1 : 0));
+    if (k && c >= seq[k - 1]) c++;
+    seq.push(c);
+  }
+  const screen = h('div', { class: 'so-screen' }, 'MEMORIZE');
   const dots = h('div', { class: 'so-dots' });
   let input = 0, accepting = false;
   const pads = pool.map(([label, color], i) => {
     const b = g.btn(label, () => {
       if (!accepting) return;
-      if (i !== seq[input]) return g.lose('wrong command');
+      if (i !== seq[input]) return g.lose('wrong command', null, { good: pads[seq[input]], bad: b });
       input++;
       dots.textContent = '●'.repeat(input) + '○'.repeat(n - input);
-      if (input >= n) g.win();
+      if (input >= n) g.win(null, null, { matrix: true });
     });
     b.style.background = color;
     return b;
   });
   g.stage.append(screen, h('div', { class: 'so-pads' }, pads), dots);
   const show = byD(g, 700, 600, 480);
+  const lead = 1400; // v2: hold on MEMORIZE so the player is ready before the sequence plays
   seq.forEach((c, k) => {
-    g.after(400 + k * show, () => {
+    g.after(lead + k * show, () => {
       screen.textContent = pool[c][0];
       screen.style.color = pool[c][1];
       pads.forEach((p, i) => p.classList.toggle('lit', i === c));
     });
   });
-  g.after(400 + n * show, () => {
+  g.after(lead + n * show, () => {
     screen.textContent = 'YOUR TURN';
     screen.style.color = '#fff';
     pads.forEach((p) => p.classList.remove('lit'));

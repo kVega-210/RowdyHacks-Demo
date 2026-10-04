@@ -60,16 +60,6 @@
       "3": { "payoutMult": 3.5, "failPenaltyMult": 5.0 }
     }
   },
-  "bankRaid": { "chancePerRound": 0.35, "windowMs": 5000, "winners": 3, "bonusTotal": 600 },
-  "cards": {
-    "voteMs": 10000,
-    "optOutPenalty": 50,
-    "maxPerPlayerPerBetween": 1,
-    "dare": { "success": 200, "fail": -100 },
-    "workout": { "success": 150, "fail": -50 },
-    "doubleOrNothing": { "tier": "2", "base": 150 },
-    "_removed": "v2: shield and stealBoost cards were removed with stealing"
-  },
   "teams": { "size": 2, "swapChance": 0.5 },
   "net": { "heartbeatMs": 10000, "staleMs": 25000, "reconnectGraceMs": 30000, "maxStateHz": 8, "typicalBudgetBytes": 1024 },
   "rateLimit": { "intentsPerSecond": 20, "scansPerSecond": 8 },

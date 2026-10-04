@@ -15,7 +15,8 @@ css('mg-vault-weight', `
 .vw-grid .hh-btn{font-size:28px;min-height:70px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#16213a;color:#fff;box-shadow:0 0 0 2px #2a3555 inset,0 4px 0 #0a0f1c}
 .vw-grid .hh-btn small{font-size:14px;color:#ffd84d}
 .vw-grid .hh-btn.in{box-shadow:0 0 0 3px #3dff9a inset,0 4px 0 #0a0f1c;background:#103322}
-.vw-go{display:block;margin:10px auto 0;width:80%;height:60px;font-size:24px}
+.vw-label{text-align:center;font:900 24px system-ui,sans-serif;letter-spacing:.12em;color:#ff5c7a;margin:8px 0 2px;text-shadow:0 0 10px #ff224466}
+.vw-go{display:block;margin:6px auto 0;width:80%;height:60px;font-size:24px}
 `);
 
 export function mount(container, opts) {
@@ -53,6 +54,6 @@ export function mount(container, opts) {
   }));
   draw();
   g.stage.append(h('div', { class: 'vw-scale' }, fill, h('div', { class: 'vw-min', style: { left: minFrac * 100 + '%' } }), h('div', { class: 'vw-max' })),
-    txt, grid, g.btn('ESCAPE', () => (total() >= limit * minFrac && total() <= limit ? g.win() : g.lose('bag too light')), 'good vw-go'));
+    txt, grid, h('div', { class: 'vw-label' }, 'STEAL!'), g.btn('ESCAPE', () => (total() >= limit * minFrac && total() <= limit ? g.win() : g.lose('bag too light')), 'good vw-go'));
   return g.handle();
 }

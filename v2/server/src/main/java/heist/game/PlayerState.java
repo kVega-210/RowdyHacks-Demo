@@ -27,7 +27,6 @@ public final class PlayerState {
     public List<ModifierSpec> activeModifiers = new ArrayList<>();
     public final List<ModifierSpec> pendingModifiers = new ArrayList<>();
     public boolean sabotageUsed;
-    public int cardsPlayed;
     public long jammedUntil = -1;
     // v2 attack spacing: was the current / previous minigame hit by a sabotage or scramble?
     public boolean curHit;

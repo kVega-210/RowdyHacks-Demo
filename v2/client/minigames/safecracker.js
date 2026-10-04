@@ -19,10 +19,10 @@ css('mg-safecracker', `
 export function mount(container, opts) {
   const g = game(container, opts, { id: meta.id, title: meta.name, hint: 'STOP the dial on each number', timeMs: 13000 });
   const N = 40;
-  const tol = 2; // v2: stopping within 2 numbers of the target counts at every difficulty
+  const tol = 5; // v2: stopping within 5 numbers of the target counts at every difficulty
   const combo = [g.r.range(5, 35), g.r.range(5, 35), g.r.range(5, 35)];
   let step = 0, angle = g.r.float(0, N), dir = 1, retries = byD(g, 1, 0, 0);
-  const rate = byD(g, 7.5, 9, 11); // numbers per second (v2: ~17% slower than 9/11/13)
+  const rate = byD(g, 5.8, 7, 8.5); // numbers per second (v2: ~35% slower than the original 9/11/13)
   const face = h('div', { class: 'sc-face' });
   for (let i = 0; i < N; i += 2) face.append(h('i', { style: { transform: `rotate(${(i / N) * 360}deg)` } }));
   const num = h('div', { class: 'sc-num' });

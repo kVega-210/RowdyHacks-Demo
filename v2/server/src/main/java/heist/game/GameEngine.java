@@ -82,7 +82,6 @@ public final class GameEngine {
     private long freezeStart = -1;
     private long freezeEndsAt = -1;
     private final Set<String> freezeViolators = new HashSet<>();
-    private BankRaid raid;
     private RivalHeist rival;
     private HackerVsHacker hvh;
     private Map<String, String> targets = new HashMap<>();
@@ -95,7 +94,6 @@ public final class GameEngine {
     private int roundSuccesses;
 
     // Between phase
-    private final Map<String, Cards.Vote> votes = new LinkedHashMap<>();
     private int seq;
 
     // Outbound throttling
@@ -198,9 +196,6 @@ public final class GameEngine {
                 if (p.attempt == null && p.nextAssignAt >= 0 && now >= p.nextAssignAt && p.connected) assign(p, now);
             }
         }
-        if (phase == Phase.BETWEEN) {
-            for (Cards.Vote v : new ArrayList<>(votes.values())) if (now >= v.endsAt) resolveVote(v, false, now);
-        }
         if (phaseEndsAt >= 0 && now >= phaseEndsAt && phase != Phase.LOBBY && phase != Phase.END) advance(now);
         long minGap = 1000L / Math.max(1, b.i("net.maxStateHz"));
         if (dirty && (lastStateAt < 0 || now - lastStateAt >= minGap)) broadcastState(now);
@@ -223,9 +218,6 @@ public final class GameEngine {
     private void enter(Phase next, int r, long now) {
         // Leaving a phase
         if (phase == Phase.PLAY) endPlay(now);
-        if (phase == Phase.BETWEEN) {
-            for (Cards.Vote v : new ArrayList<>(votes.values())) resolveVote(v, false, now);
-        }
         phase = next;
         round = r;
         long dur = RoundMachine.durationMs(b, next);
@@ -331,7 +323,6 @@ public final class GameEngine {
 
     private void endPlay(long now) {
         if (freezeEndsAt >= 0) endFreeze();
-        if (raid != null) resolveRaid(now);
         for (PlayerState p : players.values()) {
             p.attempt = null;
             p.nextAssignAt = -1;
@@ -384,11 +375,7 @@ public final class GameEngine {
     }
 
     private void startBetween(long now) {
-        votes.clear();
-        for (PlayerState p : players.values()) {
-            p.sabotageUsed = false;
-            p.cardsPlayed = 0;
-        }
+        for (PlayerState p : players.values()) p.sabotageUsed = false;
         if (!teamOf.isEmpty()) {
             String[] swap = Teams.maybeSwap(b, rng, teamOf);
             if (swap != null) {
@@ -621,44 +608,18 @@ public final class GameEngine {
                 out.toHosts(Json.msg("narrate", "key", "freeze", "vars", Json.obj()));
                 log.log(roomId, round, null, "freeze_start", Json.obj("ms", dur));
             }
-            case BANKRAID -> {
-                if (raid != null) resolveRaid(now);
-                raid = new BankRaid(now + dur, b.i("bankRaid.winners"));
-                out.toAll(Json.msg("bankraid_open", "endsAt", now + dur, "now", now, "winners", raid.maxWinners,
-                        "bonus", Math.min(b.l("bankRaid.bonusTotal"), ledger.bank)));
-                out.toHosts(Json.msg("narrate", "key", "bankraid", "vars", Json.obj()));
-                log.log(roomId, round, null, "bankraid_open", Json.obj("ms", dur));
-            }
         }
         dirty = true;
     }
 
     private void closeExpiredWindows(long now) {
         if (freezeEndsAt >= 0 && now >= freezeEndsAt + b.l("freeze.graceMs")) endFreeze();
-        if (raid != null && now >= raid.endsAt) resolveRaid(now);
     }
 
     private void endFreeze() {
         out.toAll(Json.msg("freeze_end"));
         freezeStart = -1;
         freezeEndsAt = -1;
-        dirty = true;
-    }
-
-    private void resolveRaid(long now) {
-        BankRaid r = raid;
-        raid = null;
-        long each = BankRaid.share(b.l("bankRaid.bonusTotal"), r.grabbers.size());
-        List<Map<String, Object>> winners = new ArrayList<>();
-        for (String id : r.grabbers) {
-            PlayerState p = players.get(id);
-            if (p == null) continue;
-            long paid = Economy.payout(ledger, p, each);
-            winners.add(Json.obj("id", id, "name", p.name, "amount", paid));
-            log.log(roomId, round, id, "bankraid_win", Json.obj("amount", paid, "wallet", p.wallet, "bank", ledger.bank));
-        }
-        out.toAll(Json.msg("bankraid_result", "winners", winners));
-        afterBankChange(now);
         dirty = true;
     }
 
@@ -682,24 +643,10 @@ public final class GameEngine {
         switch (t) {
             case "minigame_result" -> onResult(p, msg, now);
             case "freeze_violation" -> onFreezeViolation(p, now);
-            case "bankraid_grab" -> onGrab(p, now);
             case "sabotage" -> onSabotage(p, msg);
             case "hack_scramble" -> onScramble(p, now);
-            case "card_play" -> onCardPlay(p, msg, now);
-            case "card_vote" -> onCardVote(p, msg, now);
-            case "card_optout" -> onCardOptOut(p, msg, now);
             default -> throw new GameError("unknown_intent", "Unknown message " + t);
         }
-    }
-
-    private void onGrab(PlayerState p, long now) {
-        if (raid == null) {
-            out.toPlayer(p.id, Json.msg("bankraid_ack", "position", -1));
-            return;
-        }
-        int pos = raid.grab(p.id, now);
-        out.toPlayer(p.id, Json.msg("bankraid_ack", "position", pos));
-        if (raid.full()) resolveRaid(now);
     }
 
     private void onSabotage(PlayerState p, JsonNode msg) {
@@ -729,59 +676,12 @@ public final class GameEngine {
         log.log(roomId, round, p.id, "hvh_scramble", Json.obj("victim", v.id));
     }
 
-    private void onCardPlay(PlayerState p, JsonNode msg, long now) {
-        if (phase != Phase.BETWEEN) throw new GameError("wrong_phase", "Cards are played between rounds");
-        if (p.cardsPlayed >= b.i("cards.maxPerPlayerPerBetween")) throw new GameError("card_limit", "One card per break");
-        Content.Card card = content.cards.get((int) Json.lng(msg, "number", -1));
-        if (card == null) throw new GameError("bad_card", "No card with that number");
-        p.cardsPlayed++;
-        Cards.Vote v = new Cards.Vote("v" + (++seq), card, p.id, now + b.l("cards.voteMs"));
-        votes.put(v.id, v);
-        out.toAll(Json.msg("card_vote_open", "voteId", v.id, "playerId", p.id, "playerName", p.name, "endsAt", v.endsAt,
-                "card", Json.obj("number", card.number(), "type", card.type(), "title", card.title(), "text", card.text(), "physical", card.physical())));
-        log.log(roomId, round, p.id, "card_play", Json.obj("card", card.number()));
-        if (eligibleVoters(v) == 0) resolveVote(v, false, now);
-    }
-
-    private long eligibleVoters(Cards.Vote v) {
-        return players.values().stream().filter(x -> !x.id.equals(v.playerId) && x.connected).count();
-    }
-
-    private void onCardVote(PlayerState p, JsonNode msg, long now) {
-        Cards.Vote v = votes.get(Json.str(msg, "voteId", ""));
-        if (v == null) throw new GameError("bad_vote", "Vote is closed");
-        if (v.playerId.equals(p.id)) throw new GameError("bad_vote", "You cannot vote on your own card");
-        v.ballots.putIfAbsent(p.id, Json.bool(msg, "pass", true));
-        if (v.ballots.size() >= eligibleVoters(v)) resolveVote(v, false, now);
-    }
-
-    private void onCardOptOut(PlayerState p, JsonNode msg, long now) {
-        Cards.Vote v = votes.get(Json.str(msg, "voteId", ""));
-        if (v == null || !v.playerId.equals(p.id)) throw new GameError("bad_vote", "Not your card");
-        resolveVote(v, true, now);
-    }
-
-    private void resolveVote(Cards.Vote v, boolean optOut, long now) {
-        if (votes.remove(v.id) == null) return;
-        PlayerState p = players.get(v.playerId);
-        if (p == null) return;
-        boolean passed = v.passed();
-        Cards.Effect e = Cards.apply(b, ledger, p, v.card, passed, optOut);
-        out.toAll(Json.msg("card_vote_result", "voteId", v.id, "playerId", p.id, "playerName", p.name, "passed", passed,
-                "optOut", optOut, "delta", e.delta(), "note", e.note(), "card", v.card.number()));
-        log.log(roomId, round, p.id, "card", Json.obj("card", v.card.number(), "passed", passed, "optOut", optOut,
-                "delta", e.delta(), "wallet", p.wallet, "bank", ledger.bank));
-        afterBankChange(now);
-        dirty = true;
-    }
-
     // ------------------------------------------------------------------ admin (TL-02)
 
     public void admin(JsonNode msg, long now) {
         String action = Json.str(msg, "action", "");
         switch (action) {
             case "force_freeze" -> forceEvent(EventScheduler.Kind.FREEZE, now);
-            case "force_bankraid" -> forceEvent(EventScheduler.Kind.BANKRAID, now);
             case "skip_round" -> {
                 if (phase == Phase.LOBBY || phase == Phase.END) throw new GameError("wrong_phase", "Nothing to skip");
                 phaseEndsAt = now;
@@ -842,7 +742,6 @@ public final class GameEngine {
 
     private Map<String, Object> activeEvent(long now) {
         if (freezeEndsAt >= 0) return Json.obj("type", "freeze", "endsAt", freezeEndsAt);
-        if (raid != null) return Json.obj("type", "bankraid", "endsAt", raid.endsAt);
         return null;
     }
 
@@ -889,19 +788,12 @@ public final class GameEngine {
         out.toPlayer(pid, m);
         if (phase == Phase.BETWEEN) {
             out.toPlayer(pid, betweenMsg(p));
-            for (Cards.Vote v : votes.values()) {
-                PlayerState owner = players.get(v.playerId);
-                out.toPlayer(pid, Json.msg("card_vote_open", "voteId", v.id, "playerId", v.playerId, "playerName", owner == null ? "?" : owner.name,
-                        "endsAt", v.endsAt, "card", Json.obj("number", v.card.number(), "type", v.card.type(), "title", v.card.title(),
-                                "text", v.card.text(), "physical", v.card.physical())));
-            }
         }
         if (phase == Phase.PLAY && p.attempt != null) sendAssign(p);
         if (phase == Phase.PLAY && p.attempt == null && p.nextAssignAt < 0 && (rival == null || rival.isDuelist(p.id)) && (rival == null || rival.winner == null)) {
             p.nextAssignAt = now;
         }
         if (freezeEndsAt >= 0) out.toPlayer(pid, Json.msg("freeze_start", "endsAt", freezeEndsAt, "now", now));
-        if (raid != null) out.toPlayer(pid, Json.msg("bankraid_open", "endsAt", raid.endsAt, "now", now, "winners", raid.maxWinners));
         if (hvh != null && hvh.hacker.equals(pid) && phase == Phase.PLAY) {
             PlayerState v = players.get(hvh.victim);
             out.toPlayer(pid, Json.msg("hvh_power", "victimId", v.id, "victimName", v.name, "victimFace", v.face, "uses", hvh.usesLeft,
@@ -984,10 +876,6 @@ public final class GameEngine {
 
     public Map<String, Object> finalStandings() {
         return finalStandings;
-    }
-
-    public Map<String, Cards.Vote> votes() {
-        return votes;
     }
 
     public double payoutScale() {

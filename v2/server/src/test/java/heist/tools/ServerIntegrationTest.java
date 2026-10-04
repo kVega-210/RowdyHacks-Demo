@@ -101,14 +101,12 @@ class ServerIntegrationTest {
         assertEquals(200, health.statusCode());
         assertTrue(health.body().contains("\"ok\":true"));
         HttpResponse<String> games = c.send(HttpRequest.newBuilder(URI.create(http + "/api/minigames")).build(), HttpResponse.BodyHandlers.ofString());
-        assertEquals(36, Json.read(games.body()).size());
+        assertEquals(34, Json.read(games.body()).size());
         HttpResponse<byte[]> qr = c.send(HttpRequest.newBuilder(URI.create(http + "/api/qr?text=HK1-ABCDEF")).build(), HttpResponse.BodyHandlers.ofByteArray());
         assertEquals("image/png", qr.headers().firstValue("content-type").orElse(""));
         HttpResponse<String> phone = c.send(HttpRequest.newBuilder(URI.create(http + "/phone/")).build(), HttpResponse.BodyHandlers.ofString());
         assertTrue(phone.body().contains("/phone/app.js"));
         HttpResponse<String> balance = c.send(HttpRequest.newBuilder(URI.create(http + "/shared/balance.json")).build(), HttpResponse.BodyHandlers.ofString());
         assertTrue(balance.body().contains("startPerPlayer"));
-        HttpResponse<String> dares = c.send(HttpRequest.newBuilder(URI.create(http + "/api/dares?count=2")).build(), HttpResponse.BodyHandlers.ofString());
-        assertEquals(2, Json.read(dares.body()).path("dares").size());
     }
 }

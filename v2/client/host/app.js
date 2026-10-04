@@ -18,7 +18,7 @@ const load = () => { try { return JSON.parse(localStorage.getItem(KEY) || 'null'
 const save = (v) => { try { localStorage.setItem(KEY, JSON.stringify(v)); } catch (_) { /* ok */ } };
 
 const store = { room: null, hostToken: null, settings: null, state: null, phase: 'lobby', round: 0, rounds: balance.rounds.count,
-  roundType: null, banner: '', rival: null, rivalResult: null, results: null, votes: {}, final: null, roast: null, prevBank: null, overtime: 0 };
+  roundType: null, banner: '', rival: null, rivalResult: null, results: null, final: null, roast: null, prevBank: null, overtime: 0 };
 const $ = (id) => document.getElementById(id);
 const main = $('main');
 const narrator = new Narrator();
@@ -87,10 +87,6 @@ function handle(m) {
       L('FREEZE! ALL CLOCKS PAUSED.', 'warn');
       break;
     case 'freeze_end': clearFlash(); store.freezeEndsAt = 0; L('FREEZE LIFTED', 'dim'); break;
-    case 'bankraid_open': flash('raid', 2500); banner('raid', 'BANK RAID!', `First ${m.winners} to GRAB split ${money(m.bonus)}`, 2500); sfx.play('raid'); shake(); L('BANK RAID OPEN', 'warn'); break;
-    case 'bankraid_result':
-      L(`BANK RAID: ${(m.winners || []).map((w) => `${w.name} +${money(w.amount)}`).join(', ') || 'NOBODY GRABBED'}`, 'good');
-      break;
     case 'bank_warning':
       banner('info', m.pct === 0 ? 'THE BANK IS EMPTY!' : `BANK AT ${m.pct}%`, m.pct === 0 ? 'Heist over. Wallets banked.' : '', 2200);
       L(m.pct === 0 ? 'BANK EMPTY. HEIST OVER. WALLETS AUTO-BANKED.' : `BANK RESERVES AT ${m.pct}%`, 'warn');
@@ -98,12 +94,6 @@ function handle(m) {
       break;
     case 'fx': onFx(m); break;
     case 'narrate': narrator.say(m.key, m.vars || {}); break;
-    case 'card_vote_open': store.votes[m.voteId] = m; L(`${m.playerName} DREW CARD #${m.card.number}: ${m.card.title}`, 'warn'); if (store.phase === 'between') render(); break;
-    case 'card_vote_result':
-      delete store.votes[m.voteId];
-      L(`${m.playerName} CARD #${m.card}: ${m.optOut ? 'OPTED OUT' : m.passed ? 'PASSED' : 'FAILED'} ${m.delta ? money(m.delta) : ''}`, m.passed && !m.optOut ? 'good' : 'bad');
-      if (store.phase === 'between') render();
-      break;
     case 'rival_start': store.rival = m; store.rivalResult = null; L(`RIVAL HEIST: ${m.a.name} VS ${m.b.name}`, 'warn'); if (store.phase === 'play') render(); break;
     case 'rival_result': store.rivalResult = m; L(`${m.winnerName} WON THE SHOWDOWN +${money(m.amount)}`, 'good'); if (store.rival) rivalView.render(main, store.rival, m); sfx.play('win'); break;
     case 'hvh_start': banner('info', '💻 HACKER vs HACKER', `${m.hackerName} can scramble ${m.victimName}`, 3000); L(`HACKER VS HACKER: ${m.hackerName} TARGETS ${m.victimName}`, 'warn'); break;
@@ -164,7 +154,7 @@ function onPhase(m) {
     music.setRate(balance.speed.base * balance.speed.perRound ** Math.max(0, m.round - 1));
     if (m.round === 1 && !m.resync) narrator.say('game_start');
   }
-  if (m.phase === 'between') { store.votes = {}; narrator.say('between'); }
+  if (m.phase === 'between') narrator.say('between');
   if (m.phase === 'results' && prev === 'play') narrator.say('results');
   if (m.phase !== 'play') clearFlash();
   if (m.phase !== prev) fadeSwap(render); else render();
@@ -297,12 +287,10 @@ function renderResults() {
 
 function renderBetween() {
   const s = store.state;
-  const votes = Object.values(store.votes);
   main.innerHTML = `<div class="center-stage" style="justify-content:flex-start">
     <h1 class="sm">BREAK TIME</h1>
-    <h2 class="sub">Draw a card and enter its number on your phone. Plot your sabotage.</h2>
-    <div class="votes">${votes.map((v) => `<div class="vote-card"><b>${esc(v.playerName)}</b> drew #${v.card.number}: <b>${esc(v.card.title)}</b><div>${esc(v.card.text)}</div><div style="color:var(--dim)">Vote on your phones!</div></div>`).join('')}</div>
-    <table class="results-table" style="--rows:${(s ? s.players.length : 6) + votes.length * 1.5}">${s ? s.players.slice().sort((a, b) => (b.wallet + b.stash) - (a.wallet + a.stash)).map((p) => `<tr><td>${esc(p.face || '')} ${esc(p.name)}</td><td class="num" style="color:var(--gold)">${money(p.wallet + p.stash)}</td></tr>`).join('') : ''}</table>
+    <h2 class="sub">Plot your sabotage on your phone.</h2>
+    <table class="results-table" style="--rows:${s ? s.players.length : 6}">${s ? s.players.slice().sort((a, b) => (b.wallet + b.stash) - (a.wallet + a.stash)).map((p) => `<tr><td>${esc(p.face || '')} ${esc(p.name)}</td><td class="num" style="color:var(--gold)">${money(p.wallet + p.stash)}</td></tr>`).join('') : ''}</table>
   </div>`;
 }
 

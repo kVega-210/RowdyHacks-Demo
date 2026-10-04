@@ -10,6 +10,7 @@ css('mg-camera-loop', `
 .cl-rec{position:absolute;top:6px;left:8px;color:#ff5c7a;font-weight:900;font-size:13px}
 .cl-strip{display:flex;gap:4px;justify-content:center;margin:10px 0}
 .cl-strip i{width:22px;height:10px;border-radius:3px;background:#2a3555}.cl-strip i.away{background:#3dff9a}.cl-strip i.now{outline:2px solid #ffd84d}
+.cl-label{text-align:center;font:900 24px system-ui,sans-serif;letter-spacing:.12em;color:#ff5c7a;margin:2px 0 4px;text-shadow:0 0 10px #ff224466}
 .cl-go{display:block;margin:4px auto 0;width:80%;height:64px;font-size:26px}
 `);
 
@@ -20,7 +21,7 @@ export function mount(container, opts) {
   const aways = byD(g, 2, 1, 1);
   g.r.sample([...Array(len).keys()], aways).forEach((i) => { pattern[i] = 'away'; });
   const step = byD(g, 900, 750, 600);
-  const guard = h('div', { class: 'cl-guard' }, '💂');
+  const guard = h('div', { class: 'cl-guard' }, '👮');
   const eye = h('div', { class: 'cl-eye' });
   const marks = pattern.map((p) => h('i', { class: p === 'away' ? 'away' : '' }));
   const strip = h('div', { class: 'cl-strip' }, marks);
@@ -41,6 +42,6 @@ export function mount(container, opts) {
   });
   if (g.d >= 2) g.after(step * len, () => { strip.style.visibility = 'hidden'; g.hint('Loop memorised? The timeline is gone.'); });
   const go = g.btn('SNEAK', () => (pattern[idx] === 'away' ? g.win() : g.lose('caught on camera')), 'good cl-go');
-  g.stage.append(h('div', { class: 'cl-feed' }, h('div', { class: 'cl-rec' }, '● REC CAM-3'), eye, guard), strip, go);
+  g.stage.append(h('div', { class: 'cl-feed' }, h('div', { class: 'cl-rec' }, '● REC CAM-3'), eye, guard), strip, h('div', { class: 'cl-label' }, 'ESCAPE!'), go);
   return g.handle();
 }

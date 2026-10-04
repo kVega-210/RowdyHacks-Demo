@@ -22,18 +22,16 @@ export type Intent =
   | { t: 'resume'; room: string; token: string }
   | { t: 'leave' } | { t: 'ping' }
   | { t: 'start_game' } | { t: 'settings'; settings: Settings } | { t: 'fill_bots'; count?: number }
-  | { t: 'admin'; action: 'force_freeze' | 'force_bankraid' | 'skip_round' | 'set_bank' | 'grant' | 'kick' | 'end_game'; amount?: number; playerId?: string }
+  | { t: 'admin'; action: 'force_freeze' | 'skip_round' | 'set_bank' | 'grant' | 'kick' | 'end_game'; amount?: number; playerId?: string }
   | { t: 'minigame_result'; attemptId: string; success: boolean; scoreMultiplier?: number; reason?: string; wager?: WagerPick; nerves?: { calm: boolean } }
-  | { t: 'freeze_violation' } | { t: 'bankraid_grab' } | { t: 'hack_scramble' }
-  | { t: 'sabotage'; targetId: string; modifier: ModifierId }
-  | { t: 'card_play'; number: number } | { t: 'card_vote'; voteId: string; pass: boolean } | { t: 'card_optout'; voteId: string };
+  | { t: 'freeze_violation' } | { t: 'hack_scramble' }
+  | { t: 'sabotage'; targetId: string; modifier: ModifierId };
 
 // ---- server -> client
 export type ErrorCode = 'bad_json' | 'rate_limited' | 'not_joined' | 'no_room' | 'bad_token' | 'room_full' | 'game_in_progress'
   | 'bad_name' | 'not_enough_players' | 'wrong_phase' | 'stale_attempt' | 'unknown_intent' | 'sabotage_used' | 'target_cooldown' | 'victim_cooldown'
-  | 'too_early' | 'bad_target' | 'bad_modifier' | 'card_limit' | 'bad_card' | 'bad_vote' | 'no_power' | 'no_player' | 'unknown_admin' | 'internal';
+  | 'too_early' | 'bad_target' | 'bad_modifier' | 'no_power' | 'no_player' | 'unknown_admin' | 'internal';
 
-export interface Card { number: number; type: string; title: string; text: string; physical: boolean; }
 export interface Standing { rank: number; id: string; name: string; face: string; stash: number; successes: number; fails: number; bounties: number; team?: string; }
 
 export type ServerMessage =
@@ -41,22 +39,18 @@ export type ServerMessage =
   | { t: 'welcome'; role: 'phone'; room: string; playerId: string; name: string; token: string; face: string; resumed?: boolean }
   | { t: 'error'; code: ErrorCode; message: string; ref?: string }
   | { t: 'pong'; now: number }
-  | { t: 'state'; room: string; phase: Phase; round: number; rounds: number; overtime: number; roundType?: RoundTypeId; endsAt: number; now: number; bank?: number; bankStart?: number; speed: number; event?: { type: 'freeze' | 'bankraid'; endsAt: number }; players: PublicPlayer[]; me?: Me }
+  | { t: 'state'; room: string; phase: Phase; round: number; rounds: number; overtime: number; roundType?: RoundTypeId; endsAt: number; now: number; bank?: number; bankStart?: number; speed: number; event?: { type: 'freeze'; endsAt: number }; players: PublicPlayer[]; me?: Me }
   | { t: 'phase_changed'; phase: Phase; round: number; rounds: number; roundType?: RoundTypeId; banner?: string; endsAt: number; now: number; overtime: number; resync?: boolean }
   | { t: 'round_start'; round: number; rounds: number; roundType: RoundTypeId; banner: string; speed: number; difficulty: 1 | 2 | 3; target?: { id: string; name: string; face: string }; modifiers: ModifierSpec[]; duel?: { opponentId: string; opponentName: string }; spectator: boolean; hacker: boolean; team?: string; payoutScale: number; overtime: number }
   | { t: 'minigame_assign'; attemptId: string; gameId: string; file: string; name: string; difficulty: 1 | 2 | 3; speed: number; seed: number; modifiers: ModifierSpec[]; duel?: true }
   | { t: 'minigame_ack'; attemptId: string; accepted: boolean; reason?: 'too_fast'; success?: boolean; delta?: number; wallet?: number }
   | { t: 'freeze_warning'; startsAt: number; now: number; ms: number }
   | { t: 'freeze_start'; endsAt: number; now: number; roundEndsAt?: number } | { t: 'freeze_end' } | { t: 'freeze_penalty'; amount: number; wallet: number }
-  | { t: 'bankraid_open'; endsAt: number; now: number; winners: number; bonus?: number } | { t: 'bankraid_ack'; position: number }
-  | { t: 'bankraid_result'; winners: { id: string; name: string; amount: number }[] }
   | { t: 'bank_warning'; pct: 75 | 50 | 25 | 0; bank: number }
   | { t: 'round_results'; round: number; table: { id: string; name: string; earned: number; wallet: number; stash: number; team?: string }[]; bank: number; bounty?: { targetId: string; targetName: string; mine: number; theirs: number; won: boolean; amount: number }; teamDelta?: number; bounties?: number; bountyWinners?: string[] }
   | { t: 'between'; nextRound: number; overtime: number; sabotage: boolean; modifiers: ModifierId[]; immune: string[]; endsAt: number }
   | { t: 'sabotage_ack'; targetId: string; targetName: string; targetFace: string; modifier: ModifierId }
   | { t: 'modifier_apply' } & ModifierSpec
-  | { t: 'card_vote_open'; voteId: string; playerId: string; playerName: string; endsAt: number; card: Card }
-  | { t: 'card_vote_result'; voteId: string; playerId: string; playerName: string; passed: boolean; optOut: boolean; delta: number; note: string; card: number }
   | { t: 'rival_start'; a: { id: string; name: string }; b: { id: string; name: string }; gameId: string; pot: number }
   | { t: 'rival_result'; winnerId: string; winnerName: string; loserId?: string; loserName?: string; amount: number; penalty: number }
   | { t: 'hvh_start'; hackerName: string; victimName: string } | { t: 'hvh_power'; victimId: string; victimName: string; victimFace: string; uses: number; scrambleMs: number }

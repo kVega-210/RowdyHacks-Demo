@@ -22,7 +22,7 @@ import java.util.function.Consumer;
 
 /**
  * TL-01 protocol bot. Speaks exactly what a phone speaks: join, play (reporting results with a configurable
- * success rate), sometimes twitch during Freeze, grab in Bank Raids, play cards, sabotage, and randomly drop
+ * success rate), sometimes twitch during Freeze, sabotage, and randomly drop
  * and resume its connection with the session token.
  * All delays are in game milliseconds and divided by {@code timeScale}.
  */
@@ -195,7 +195,6 @@ public final class Bot {
             case "freeze_start" -> {
                 if (rnd.nextDouble() < cfg.freezeViolationChance) later(rnd.nextInt(2000), () -> send(Json.msg("freeze_violation")));
             }
-            case "bankraid_open" -> later(200 + rnd.nextInt(2500), () -> send(Json.msg("bankraid_grab")));
             case "between" -> {
                 List<String> targets = new ArrayList<>(others);
                 m.path("immune").forEach(x -> targets.remove(x.asText()));
@@ -207,13 +206,6 @@ public final class Bot {
                         String mod = mods.get(rnd.nextInt(mods.size()));
                         later(500 + rnd.nextInt(3000), () -> send(Json.msg("sabotage", "targetId", target, "modifier", mod)));
                     }
-                }
-                if (rnd.nextDouble() < 0.15) later(500 + rnd.nextInt(2000), () -> send(Json.msg("card_play", "number", 1 + rnd.nextInt(11))));
-            }
-            case "card_vote_open" -> {
-                if (!Json.str(m, "playerId", "").equals(playerId)) {
-                    String vote = Json.str(m, "voteId", "");
-                    later(500 + rnd.nextInt(4000), () -> send(Json.msg("card_vote", "voteId", vote, "pass", rnd.nextDouble() < 0.6)));
                 }
             }
             case "hvh_power" -> {

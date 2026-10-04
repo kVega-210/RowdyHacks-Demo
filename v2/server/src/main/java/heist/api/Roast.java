@@ -47,6 +47,17 @@ public final class Roast {
     }
 
     @SuppressWarnings("unchecked")
+    /** Safety filter for Gemini roast lines (v2: moved here from the removed dares/cards API). */
+    private static final java.util.regex.Pattern UNSAFE = java.util.regex.Pattern.compile(
+            "(?i)\\b(alcohol|beer|shot|drink|drunk|vodka|kiss|lick|strip|naked|undress|slap|punch|hit|kick|bite|"
+                    + "throw|fire|knife|blood|drug|weed|smoke|vape|sex|touch (someone|a stranger)|stranger|run outside|"
+                    + "climb|jump off|hold your breath|eat|swallow|phone number|password|money|venmo|cash app|steal from)\\b");
+
+    /** True if a line passes the safety filter. */
+    public static boolean safe(String s) {
+        return s != null && !UNSAFE.matcher(s).find();
+    }
+
     Map<String, Object> validate(JsonNode out, Map<String, Object> facts) {
         if (out == null || !out.path("players").isArray()) return null;
         List<Map<String, Object>> players = new ArrayList<>();
@@ -55,7 +66,7 @@ public final class Roast {
             List<String> lines = new ArrayList<>();
             for (JsonNode l : p.path("lines")) {
                 String s = l.asText("").trim();
-                if (!s.isEmpty() && s.length() <= 160 && Dares.safe(s)) lines.add(s);
+                if (!s.isEmpty() && s.length() <= 160 && safe(s)) lines.add(s);
             }
             if (name.isEmpty() || lines.size() < b.i("ai.roastLinesMin")) return null;
             players.add(Json.obj("name", name, "lines", lines.subList(0, Math.min(lines.size(), b.i("ai.roastLinesMax")))));

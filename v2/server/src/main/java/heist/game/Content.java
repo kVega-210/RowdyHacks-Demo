@@ -7,15 +7,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
 
-/** Loaded /content files the server needs: cards (PH-03) and flavor text (CT-03). */
+/** Loaded /content files the server needs: flavor text (CT-03). v2: the card deck was removed. */
 public final class Content {
-    public record Card(int number, String type, String effect, String title, String text, boolean physical) {
-    }
-
-    public final Map<Integer, Card> cards = new TreeMap<>();
     public final List<String> vaultNames = new ArrayList<>();
     public final List<String> teamNames = new ArrayList<>();
     public final List<String> aliases = new ArrayList<>();
@@ -26,12 +20,6 @@ public final class Content {
     public final JsonNode flavor;
 
     public Content(Path root) {
-        JsonNode cardsJson = readOrEmpty(root.resolve("content/cards.json"));
-        for (JsonNode c : cardsJson.path("cards")) {
-            Card card = new Card(c.path("number").asInt(), c.path("type").asText(), c.path("effect").asText(),
-                    c.path("title").asText(), c.path("text").asText(), c.path("physical").asBoolean(false));
-            cards.put(card.number(), card);
-        }
         flavor = readOrEmpty(root.resolve("content/flavor.json"));
         flavor.path("vaultNames").forEach(n -> vaultNames.add(n.asText()));
         flavor.path("teamNames").forEach(n -> teamNames.add(n.asText()));

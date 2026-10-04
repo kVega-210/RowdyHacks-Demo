@@ -6,27 +6,23 @@
 export const C2S = Object.freeze({
   CREATE_ROOM: 'create_room', HOST_RESUME: 'host_resume', JOIN: 'join', RESUME: 'resume', LEAVE: 'leave', PING: 'ping',
   START_GAME: 'start_game', SETTINGS: 'settings', FILL_BOTS: 'fill_bots', ADMIN: 'admin',
-  KEY_CLAIM: 'key_claim', KEY_SCAN: 'key_scan', MINIGAME_RESULT: 'minigame_result', FREEZE_VIOLATION: 'freeze_violation',
-  BANKRAID_GRAB: 'bankraid_grab', ESCAPE: 'escape', SABOTAGE: 'sabotage', HACK_SCRAMBLE: 'hack_scramble',
-  CARD_PLAY: 'card_play', CARD_VOTE: 'card_vote', CARD_OPTOUT: 'card_optout',
+  MINIGAME_RESULT: 'minigame_result', FREEZE_VIOLATION: 'freeze_violation', SABOTAGE: 'sabotage', HACK_SCRAMBLE: 'hack_scramble',
 });
 
 /** Server -> client state/events. */
 export const S2C = Object.freeze({
   WELCOME: 'welcome', ERROR: 'error', PONG: 'pong', STATE: 'state', PHASE_CHANGED: 'phase_changed', SETTINGS: 'settings',
   ROUND_START: 'round_start', MINIGAME_ASSIGN: 'minigame_assign', MINIGAME_ACK: 'minigame_ack',
-  STEAL_OPEN: 'steal_open', STEAL_RESULT: 'steal_result', STEAL_REJECT: 'steal_reject', STEAL_CLOSED: 'steal_closed',
   FREEZE_START: 'freeze_start', FREEZE_END: 'freeze_end', FREEZE_PENALTY: 'freeze_penalty',
-  BANKRAID_OPEN: 'bankraid_open', BANKRAID_ACK: 'bankraid_ack', BANKRAID_RESULT: 'bankraid_result',
   BANK_WARNING: 'bank_warning', ROUND_RESULTS: 'round_results', BETWEEN: 'between', TEAMS_UPDATE: 'teams_update',
-  CARD_VOTE_OPEN: 'card_vote_open', CARD_VOTE_RESULT: 'card_vote_result', SABOTAGE_ACK: 'sabotage_ack',
+  SABOTAGE_ACK: 'sabotage_ack',
   MODIFIER_APPLY: 'modifier_apply', HVH_START: 'hvh_start', HVH_POWER: 'hvh_power', HVH_ACK: 'hvh_ack', HVH_BONUS: 'hvh_bonus',
-  RIVAL_START: 'rival_start', RIVAL_RESULT: 'rival_result', ESCAPE_OPEN: 'escape_open', ESCAPE_ACK: 'escape_ack',
-  FINAL_STANDINGS: 'final_standings', ROAST: 'roast', KEY_CLAIMED: 'key_claimed', KICKED: 'kicked',
+  RIVAL_START: 'rival_start', RIVAL_RESULT: 'rival_result',
+  FINAL_STANDINGS: 'final_standings', ROAST: 'roast', KICKED: 'kicked',
   NARRATE: 'narrate', FX: 'fx',
 });
 
-export const PHASES = Object.freeze(['lobby', 'briefing', 'play', 'results', 'between', 'escape', 'end']);
+export const PHASES = Object.freeze(['lobby', 'briefing', 'play', 'results', 'between', 'end']);
 
 /**
  * Reconnecting socket. onOpen fires on every (re)connect so the app can send join/resume/host_resume.

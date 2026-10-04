@@ -1,8 +1,7 @@
-// CL-07 between-round screen: next-round countdown, the Sabotage picker (BE-11 / CT-02), optional card prompt
-// (PH-04) and standings. v2: victims are picked by animal face in a compact grid, side by side with the tricks,
+// CL-07 between-round screen: next-round countdown, the Sabotage picker (BE-11 / CT-02) and standings.
+// v2: the card deck is gone. v2: victims are picked by animal face in a compact grid, side by side with the tricks,
 // so nothing has to scroll; players hit last round are shielded and can't be picked.
 import { h, money, view, countdown, bigBtn } from '../ui.js';
-import * as cards from '../cards/cards.js';
 
 let names = null;
 async function modifierNames() {
@@ -36,7 +35,6 @@ export async function render(ctx) {
   const s = ctx.store;
   const st = s.state;
   const others = st ? st.players.filter((p) => p.id !== s.playerId) : [];
-  const votesBox = h('div');
   const nextRound = (s.between && s.between.nextRound) || (st && st.round + 1);
   const ot = s.between && s.between.overtime;
   const parts = [
@@ -78,7 +76,6 @@ export async function render(ctx) {
   } else if (s.sabotageSent) {
     parts.push(h('div', { class: 'card center' }, `😈 Sabotage queued: ${s.sabotageSent}`));
   }
-  parts.push(votesBox, cards.entry(ctx));
   if (st) {
     const ranked = st.players.slice().sort((a, b) => (b.wallet + b.stash) - (a.wallet + a.stash));
     parts.push(h('div', { class: 'card' }, h('h2', {}, `Bank: ${money(st.bank)}`),
@@ -86,6 +83,4 @@ export async function render(ctx) {
         h('span', {}, h('span', { class: 'face-name' }, p.face || ''), p.name + (p.team ? ` · ${p.team}` : '')), h('span', {}, money(p.wallet + p.stash)))))));
   }
   view(...parts);
-  cards.renderVotes(ctx, votesBox);
-  ctx.votesBox = votesBox;
 }

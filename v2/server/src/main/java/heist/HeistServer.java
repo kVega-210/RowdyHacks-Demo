@@ -1,7 +1,6 @@
 package heist;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import heist.api.Dares;
 import heist.api.ElevenLabs;
 import heist.api.Gemini;
 import heist.api.Qr;
@@ -67,7 +66,6 @@ public final class HeistServer {
     private final Gemini gemini = Gemini.fromEnv();
     private final ElevenLabs eleven = ElevenLabs.fromEnv();
     private final Roast roast;
-    private final Dares dares;
     private final Tts tts;
     private final KeySigner signer = KeySigner.fromEnv();
     private final Map<String, Conn> conns = new ConcurrentHashMap<>();
@@ -105,7 +103,6 @@ public final class HeistServer {
         this.events = new EventWriter(sink);
         this.store = st;
         this.roast = new Roast(gemini, balance);
-        this.dares = new Dares(gemini, balance, content);
         this.tts = new Tts(eleven, balance, o.root);
         this.rooms = new RoomManager(o.root, balance, o.clock, events, signer);
     }
@@ -252,7 +249,6 @@ public final class HeistServer {
             Map<String, Object> facts = Json.MAPPER.convertValue(body, Map.class);
             ctx.json(roast.roast(normalizeFacts(facts)));
         });
-        app.get("/api/dares", ctx -> ctx.json(dares.get(Math.max(1, Math.min(10, parseInt(ctx.queryParam("count"), 3))))));
         app.get("/api/tts", ctx -> {
             Tts.Result r = tts.line(ctx.queryParam("id"), ctx.queryParam("name"));
             if (r instanceof Tts.Audio a) ctx.contentType("audio/mpeg").result(a.mp3());

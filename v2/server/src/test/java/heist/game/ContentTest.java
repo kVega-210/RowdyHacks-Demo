@@ -12,15 +12,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ContentTest {
     @Test
-    void elevenCardsKeyedToBalanceWithOptOuts() {
-        // v2: the four steal cards (Shield, Steal Boost) were removed with stealing.
-        assertEquals(11, TestSupport.CONTENT.cards.size());
-        for (Content.Card c : TestSupport.CONTENT.cards.values()) {
-            assertTrue(TestSupport.BALANCE.has("cards." + c.effect()), "card " + c.number() + " effect " + c.effect() + " must exist in balance.json");
-        }
-    }
-
-    @Test
     void narratorHasSixtyPlusLinesAndAtMostEightNamed() throws Exception {
         JsonNode n = Json.MAPPER.readTree(Files.readString(TestSupport.ROOT.resolve("content/narrator.json")));
         assertTrue(n.path("lines").size() >= 60);

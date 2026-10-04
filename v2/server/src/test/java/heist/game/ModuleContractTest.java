@@ -22,9 +22,10 @@ class ModuleContractTest {
     private static final Path ROOT = TestSupport.ROOT;
 
     @Test
-    void thirtySixMinigamesWithValidMeta() throws Exception {
+    void thirtyFourMinigamesWithValidMeta() throws Exception {
         List<ModuleCatalog.Info> games = TestSupport.CATALOG;
-        assertEquals(36, games.size(), "36 minigames in /client/minigames");
+        // v2: Train Heist and Ventilation Shaft were removed.
+        assertEquals(34, games.size(), "34 minigames in /client/minigames");
         Set<String> ids = new HashSet<>();
         String captions = Files.readString(ROOT.resolve("content/fail-lines.json"));
         for (ModuleCatalog.Info g : games) {

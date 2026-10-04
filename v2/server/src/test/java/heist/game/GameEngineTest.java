@@ -284,31 +284,6 @@ class GameEngineTest {
         g.handle(a.id, j("t", "sabotage", "targetId", d.id, "modifier", "screen-jitter"), clock.now());
     }
 
-    @Test
-    void cardVoteMajorityAppliesEffect() {
-        TestSupport.Capture out = new TestSupport.Capture();
-        GameEngine g = TestSupport.engine(out, 31);
-        PlayerState a = g.addPlayer("A", false), c = g.addPlayer("B", false), d = g.addPlayer("C", false);
-        Clock.Manual clock = new Clock.Manual(0);
-        g.start(0);
-        while (g.phase() != Phase.BETWEEN) { clock.advance(100); g.tick(clock.now()); }
-        long before = a.wallet;
-        g.handle(a.id, j("t", "card_play", "number", 1), clock.now());
-        String vote = (String) out.of("card_vote_open").get(0).get("voteId");
-        g.handle(c.id, j("t", "card_vote", "voteId", vote, "pass", true), clock.now());
-        g.handle(d.id, j("t", "card_vote", "voteId", vote, "pass", true), clock.now());
-        Map<String, Object> res = out.of("card_vote_result").get(0);
-        assertEquals(true, res.get("passed"));
-        assertEquals(before + b.l("cards.dare.success"), a.wallet);
-        // Opting out of a physical card is free.
-        PlayerState x = c;
-        long w = x.wallet;
-        g.handle(x.id, j("t", "card_play", "number", 5), clock.now());
-        String v2 = (String) out.of("card_vote_open").get(1).get("voteId");
-        g.handle(x.id, j("t", "card_optout", "voteId", v2), clock.now());
-        assertEquals(w, x.wallet);
-        assertNull(g.invariantError());
-    }
 
     @Test
     void freezeViolationsArePenalisedOncePerWindow() {
@@ -363,26 +338,6 @@ class GameEngineTest {
         }
     }
 
-    @Test
-    void bankRaidPaysFirstNByReceiveOrder() {
-        TestSupport.Capture out = new TestSupport.Capture();
-        GameEngine g = TestSupport.engine(out, 51);
-        List<PlayerState> ps = new ArrayList<>();
-        for (int i = 0; i < 6; i++) ps.add(g.addPlayer("P" + i, false));
-        Clock.Manual clock = new Clock.Manual(0);
-        g.start(0);
-        while (g.phase() != Phase.PLAY) { clock.advance(50); g.tick(clock.now()); }
-        g.admin(j("action", "force_bankraid"), clock.now());
-        for (PlayerState p : ps) g.handle(p.id, j("t", "bankraid_grab"), clock.now());
-        Map<String, Object> res = out.of("bankraid_result").get(0);
-        @SuppressWarnings("unchecked")
-        List<Map<String, Object>> winners = (List<Map<String, Object>>) res.get("winners");
-        assertEquals(b.i("bankRaid.winners"), winners.size());
-        assertEquals(ps.get(0).id, winners.get(0).get("id"));
-        long each = b.l("bankRaid.bonusTotal") / b.i("bankRaid.winners");
-        assertEquals(each, ps.get(0).wallet);
-        assertEquals(0, ps.get(5).wallet);
-    }
 
     @Test
     void rivalRoundGivesBothDuelistsTheSameSeedsAndPaysTheFirstSuccess() {

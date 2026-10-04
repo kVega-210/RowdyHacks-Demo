@@ -36,15 +36,9 @@ class AiFallbackTest {
     }
 
     @Test
-    void daresFallBackToCardsAndFilterUnsafeOutput() {
-        Map<String, Object> d = new Dares(off, TestSupport.BALANCE, TestSupport.CONTENT).get(3);
-        assertEquals("cards", d.get("source"));
-        assertEquals(3, ((List<?>) d.get("dares")).size());
-        var parsed = Dares.validate(Json.MAPPER.valueToTree(Json.obj("dares", List.of(
-                Json.obj("title", "Shot o'clock", "text", "Take a shot of vodka with the crew right now", "physical", true),
-                Json.obj("title", "Getaway Pose", "text", "Strike your best getaway driver pose for five seconds", "physical", false)))));
-        assertEquals(1, parsed.size());
-        assertFalse(Dares.safe("kiss the guard"));
+    void roastLinesAreSafetyFiltered() {
+        assertFalse(Roast.safe("kiss the guard"));
+        assertTrue(Roast.safe("cracked 12 locks"));
     }
 
     @Test

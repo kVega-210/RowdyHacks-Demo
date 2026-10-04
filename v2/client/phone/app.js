@@ -5,9 +5,7 @@ import * as join from './join/join.js';
 import { Hud } from './hud/hud.js';
 import { Runner } from './runner/runner.js';
 import * as ov from './overlays/overlays.js';
-import * as raid from './overlays/bankraid.js';
 import * as between from './between/between.js';
-import * as cards from './cards/cards.js';
 import * as target from './target/target.js';
 import * as final from './final/final.js';
 import { sfx, unlockAudio } from '../fx/sfx.js';
@@ -19,7 +17,7 @@ const balance = await fetch('/shared/balance.json').then((r) => r.json());
 
 const store = {
   room: null, playerId: null, token: null, name: null, phase: null, state: null, me: null,
-  round: null, assign: null, votes: {}, between: null, sabotageSent: null, final: null, roast: null,
+  round: null, assign: null, between: null, sabotageSent: null, final: null, roast: null,
   face: null, pending: null, hvh: null, freezeEndsAt: 0,
 };
 const termEl = document.getElementById('terminal');
@@ -128,15 +126,7 @@ function handle(m) {
       break;
     case 'freeze_end': store.freezeEndsAt = 0; ov.freezeEnd(ctx); L('FREEZE LIFTED. RESUME.', 'dim'); break;
     case 'freeze_penalty': ov.freezePenalty(ctx, m); L(`FREEZE VIOLATION -${money(m.amount)}`, 'bad'); break;
-    case 'bankraid_open': raid.raidOpen(ctx, m); L('BANK RAID! GRAB THE CASH!', 'warn'); break;
-    case 'bankraid_ack': raid.raidAck(ctx, m); break;
-    case 'bankraid_result': {
-      const mine = (m.winners || []).find((w) => w.id === store.playerId);
-      L(mine ? `BANK RAID SHARE +${money(mine.amount)}` : 'BANK RAID MISSED', mine ? 'good' : 'dim');
-      raid.raidResult(ctx, m);
-      break;
-    }
-    case 'bank_warning': toast(m.pct === 0 ? '🏦 THE BANK IS EMPTY!' : `🏦 Bank down to ${m.pct}%`, 'gold', 2500); L(m.pct === 0 ? 'BANK EMPTY. ESCAPE!' : `BANK RESERVES AT ${m.pct}%`, 'warn'); break;
+    case 'bank_warning': toast(m.pct === 0 ? '🏦 THE BANK IS EMPTY!' : `🏦 Bank down to ${m.pct}%`, 'gold', 2500); L(m.pct === 0 ? 'BANK EMPTY. HEIST OVER.' : `BANK RESERVES AT ${m.pct}%`, 'warn'); break;
     case 'round_results': {
       store.lastResults = m;
       const row = (m.table || []).find((r) => r.id === store.playerId);
@@ -151,11 +141,6 @@ function handle(m) {
       L(`SABOTAGE QUEUED: ${m.modifier} ON ${m.targetFace || ''} ${m.targetName}`, 'warn');
       toast(`Sabotage set on ${m.targetFace || ''} ${m.targetName}`, 'good');
       if (store.phase === 'between') renderPhase();
-      break;
-    case 'card_vote_open': store.votes[m.voteId] = m; cards.renderVotes(ctx, ctx.votesBox); sfx.play('tick'); break;
-    case 'card_vote_result':
-      delete store.votes[m.voteId]; cards.renderVotes(ctx, ctx.votesBox); cards.result(ctx, m);
-      if (m.playerId === store.playerId) L(`CARD #${m.card} ${m.optOut ? 'SKIPPED' : m.passed ? 'PASSED' : 'FAILED'} ${m.delta ? money(m.delta) : ''}`, m.passed && !m.optOut ? 'good' : 'bad');
       break;
     case 'teams_update': toast('Crew shake-up! Teams were swapped.', 'gold'); break;
     case 'hvh_start': toast(`💻 Hacker vs Hacker: ${m.hackerName} is gunning for ${m.victimName}`, 'gold', 3500); break;
@@ -189,7 +174,7 @@ const PHASE_LOG = {
   briefing: (m) => [m.overtime ? `OVERTIME ${m.overtime}: ${String(m.roundType || '').toUpperCase()}` : `ROUND ${m.round}/${m.rounds}: ${String(m.roundType || '').toUpperCase()}`, 'warn'],
   play: () => ['JOB STARTED. CRACK EVERYTHING.', 'dim'],
   results: () => ['ROUND OVER. COUNTING LOOT...', 'dim'],
-  between: () => ['SAFEHOUSE BREAK. CARDS AND SABOTAGE OPEN.', 'dim'],
+  between: () => ['SAFEHOUSE BREAK. SABOTAGE OPEN.', 'dim'],
   end: () => ['BANK EMPTY. WALLETS BANKED. CONNECTION ARCHIVED. SCROLL TO REVIEW.', 'dim'],
 };
 
@@ -209,7 +194,6 @@ function applyPhase(m) {
   if (m.phase !== 'play') { runner.hide(); removeScramble(); }
   if (m.phase === 'play' && prev !== 'play') store.assign = null;
   if (m.phase === 'briefing') { store.rival = null; store.hvh = null; }
-  if (m.phase !== 'between') store.votes = {};
   ov.close();
 }
 

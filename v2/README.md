@@ -14,7 +14,7 @@ Open **http://localhost:7071/host/** on the big screen and **http://localhost:70
 Press **Fill with bots** to play solo. The minigame sandbox is at `/dev/minigame-sandbox/`.
 
 ```sh
-./run.sh test                                   # JUnit tests (53)
+./run.sh test                                   # JUnit tests (50)
 node scripts/browser-check/minigames.mjs        # fuzz every minigame in headless Chromium (server on 7071)
 HEIST_TIME_SCALE=4 PORT=7172 ./run.sh           # sped-up server, then:
 node scripts/browser-check/e2e.mjs http://localhost:7172   # host + phone + bots full game
@@ -44,7 +44,7 @@ bigger text, tile choices (doors and briefcases), answer reveals on fail, and ma
   bank. If cash is left after the last round, **overtime** rounds pay out harder until it is empty (safety cap: 6).
 - No escape phase: every wallet is banked automatically at the end.
 - Stealing is gone, along with everything that only existed for it: the Steal screen, keys and key scanning, the HUD key and
-  stash cells, and the Shield and Steal Boost cards. Bank Raid stays.
+  stash cells, and the Shield and Steal Boost cards.
 - Freeze is a little more frequent (50% of rounds, still at most one).
 
 **Targeting**
@@ -61,5 +61,12 @@ bigger text, tile choices (doors and briefcases), answer reveals on fail, and ma
 Breach, Firewall Freeze, Getaway Driver, Guard Patrol, Laser Grid, Laser Timing, Last Second Grab, Lockpick, Malware
 Cleanup, Museum Heist, Packet Sniffer, Password Cracker, Password Roulette, Rooftop Escape and Safecracker all got
 the requested changes.
+
+### Third batch
+- Removed the Bank Raid pop-up (the big gold GRAB button) and the whole card deck (draw a card, crew vote, the dares API
+  and the printable cards sheet). The only mid-round event left is the Freeze.
+- Removed the Train Heist and Ventilation Shaft minigames (34 left).
+- Safecracker, Security Badge, Security Camera Loop, Security Override, Server Overload, Silent Alarm, The Inside Man,
+  Trace the IP and Vault Weight got the requested changes.
 
 Every tunable number is still in `shared/balance.json` (see `economy`, `events`, `freeze` and `sabotage`).

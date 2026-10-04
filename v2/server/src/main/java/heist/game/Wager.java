@@ -4,7 +4,7 @@ import heist.config.Balance;
 
 /**
  * BE-12 generic wager. A tier scales the base payout on success and the base penalty on failure.
- * Used by the choice minigames (MG-08/14/40) and double-or-nothing cards.
+ * Used by the choice minigames (MG-08/14/40).
  */
 public final class Wager {
     private Wager() {}

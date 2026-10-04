@@ -8,7 +8,6 @@ css('mg-badge', `
 .sb-badge b{display:block;font-size:46px;line-height:1.1}
 .sb-doors{display:grid;gap:10px}
 .sb-doors .hh-btn{min-height:84px;font-size:36px;background:#3b2a1a;box-shadow:0 0 0 3px #8a5a2b inset,0 4px 0 #1d140c;color:#fff}
-.sb-left{text-align:center;margin-top:8px;opacity:.85}
 `);
 
 export function mount(container, opts) {
@@ -20,24 +19,24 @@ export function mount(container, opts) {
   if (g.d === 3) { keys[4] = { s: keys[0].s, c: COLORS[3] }; keys[5] = { s: keys[1].s, c: COLORS[4] }; }
   const badge = h('div', { class: 'sb-badge' });
   const doors = h('div', { class: 'sb-doors', style: { gridTemplateColumns: `repeat(${doorsN > 3 ? 3 : doorsN},1fr)` } });
-  const left = h('div', { class: 'sb-left' });
   let done = 0, want;
   const next = () => {
     want = g.r.int(doorsN);
     badge.replaceChildren('EMPLOYEE', h('b', { style: { color: keys[want].c } }, keys[want].s), 'ACCESS');
-    left.textContent = `Doors left: ${matches - done}`;
     const order = g.r.shuffle([...keys.keys()]);
+    const btns = [];
     doors.replaceChildren(...order.map((k) => {
       const b = g.btn(keys[k].s, () => {
-        if (k !== want) return g.lose('wrong door, alarm!');
+        if (k !== want) return g.lose('wrong door, alarm!', null, { good: btns[want], bad: b });
         done++;
-        if (done >= matches) g.win(); else next();
+        if (done >= matches) g.win(null, null, { matrix: true }); else next();
       });
       b.style.color = keys[k].c;
+      btns[k] = b;
       return b;
     }));
   };
   next();
-  g.stage.append(badge, doors, left);
+  g.stage.append(badge, doors);
   return g.handle();
 }
