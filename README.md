@@ -1,5 +1,32 @@
 # HEIST HAVOC!
 
+A party heist game for **2-30 players**: one big host screen, everyone's phone as the controller. Race through 34
+quick minigames to drain a shared vault before your friends do, sabotage rivals by their animal face, survive the
+Freeze, and win live head-to-head duels. When the vault hits $0, the biggest stash wins.
+
+## ▶ Play the latest version: v3
+**v3 is the current version** (round themes, live rival duels, up to 30 players, all the latest fixes).
+Requires **Java 21** ([Temurin](https://adoptium.net/); Maven comes with the wrapper).
+
+```powershell
+git clone https://github.com/kVega-210/RowdyHacks-Demo.git
+cd RowdyHacks-Demo/v3
+.\run.cmd          # Windows   (macOS/Linux: ./run.sh)
+```
+Open **http://localhost:7072/host/** on the big screen. Players scan the QR code with their phones (same Wi-Fi), or
+press **Fill with bots** to try it solo. Optional AI voice / roast keys: copy `v3/.env.example` to `v3/.env`.
+Full guide, troubleshooting and what's new: **[v3/README.md](v3/README.md)**.
+
+| Folder | Version | Port |
+|---|---|---|
+| [`v3/`](v3/README.md) | **Latest**: v2 + round themes, stylised fonts, rival duels and rival events, 30 players | 7072 |
+| [`v2/`](v2/README.md) | Terminal, effects, reworked minigames, bank-driven economy | 7071 |
+| repo root | v1, the original hackathon build (documented below) | 7070 |
+
+---
+
+# v1 (original build)
+
 A party heist game for 2-8 players: one big host screen, everyone's phone, real keys on the table.
 Crack minigames to pull cash out of a shrinking bank, steal from your friends by scanning their keys, freeze,
 sabotage, gamble, and escape with the biggest stash. Rules: [docs/game-spec.md](docs/game-spec.md).
