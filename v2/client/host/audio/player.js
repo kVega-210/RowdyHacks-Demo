@@ -1,9 +1,14 @@
-// AU-03 host narrator playback: a priority queue where STEAL/FREEZE/RAID/ESCAPE cut in, music ducking while
+// AU-03 host narrator playback: a priority queue where FREEZE and the empty bank cut in, music ducking while
 // the Mastermind talks, an event -> line mapper with random variants, and graceful fallbacks:
 // pre-generated ElevenLabs mp3 (manifest.json, AU-02) -> Web Speech API -> silence.
 import { music } from '../../fx/sfx.js';
 
-const URGENT = new Set(['steal', 'freeze', 'bankraid', 'escape', 'bank_0']);
+const URGENT = new Set(['freeze', 'bank_0']);
+
+// Fallback voice (browser Web Speech, used when there is no ElevenLabs mp3 for a line). Tweak freely:
+// voice: first installed voice whose name matches (e.g. /daniel|google uk english male/i); lang: preferred language;
+// rate 0.1-10 (1 = normal), pitch 0-2 (1 = normal). The ElevenLabs voice is set with ELEVENLABS_VOICE_ID in .env.
+const FALLBACK_VOICE = { voice: /male|daniel|arthur/i, lang: /en-GB/i, rate: 1.05, pitch: 0.8 };
 
 export class Narrator {
   constructor() {
@@ -130,9 +135,10 @@ export class Narrator {
     if (!text || !('speechSynthesis' in window) || !this.unlocked) { setTimeout(done, 200); return; }
     const u = new SpeechSynthesisUtterance(text);
     const voices = window.speechSynthesis.getVoices();
-    u.voice = voices.find((v) => /en-GB/i.test(v.lang) && /male|daniel|arthur/i.test(v.name)) || voices.find((v) => /^en/i.test(v.lang)) || null;
-    u.rate = 1.05;
-    u.pitch = 0.8;
+    u.voice = voices.find((v) => FALLBACK_VOICE.lang.test(v.lang) && FALLBACK_VOICE.voice.test(v.name))
+      || voices.find((v) => FALLBACK_VOICE.voice.test(v.name)) || voices.find((v) => /^en/i.test(v.lang)) || null;
+    u.rate = FALLBACK_VOICE.rate;
+    u.pitch = FALLBACK_VOICE.pitch;
     u.onend = done;
     u.onerror = done;
     this.current = { item, stop: () => window.speechSynthesis.cancel() };

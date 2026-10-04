@@ -163,7 +163,7 @@ export function game(container, opts, cfg) {
       if (done) return;
       done = true;
       stop();
-      sfx.play('coin');
+      sfx.play('success'); // soundboard: cash register / coin / jingle
       playWin(root);
       if (fx.matrix) matrixRain(root, 1300);
       setTimeout(() => {
@@ -177,7 +177,7 @@ export function game(container, opts, cfg) {
       if (done) return;
       done = true;
       stop();
-      sfx.play('fail');
+      sfx.play('fail'); // soundboard: siren / handcuffs
       const reveal = fx.good || fx.bad;
       if (reveal) answerReveal(fx);
       setTimeout(() => {

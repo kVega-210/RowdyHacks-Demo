@@ -117,8 +117,9 @@ function handle(m) {
 
 function onFx(m) {
   const game = String(m.gameId || '').replace(/-/g, ' ').toUpperCase();
-  if (m.kind === 'fail') L(`${m.name} FAILED ${game} ${m.amount ? money(m.amount) : ''}`, 'bad');
-  else if (m.kind === 'success') L(`${m.name} CRACKED ${game} +${money(m.amount)}`, 'good');
+  // Soundboard on the big screen for everyone's jobs (throttled so a burst of results doesn't turn into noise).
+  if (m.kind === 'fail') { L(`${m.name} FAILED ${game} ${m.amount ? money(m.amount) : ''}`, 'bad'); sfx.play('fail', { minGapMs: 350 }); }
+  else if (m.kind === 'success') { L(`${m.name} CRACKED ${game} +${money(m.amount)}`, 'good'); sfx.play('success', { minGapMs: 250 }); }
   else if (m.kind === 'freeze_violation') L(`${m.name} MOVED DURING FREEZE ${money(m.amount)}`, 'bad');
   else if (m.kind === 'sabotage') L(`SOMEONE QUEUED ${String(m.modifier).toUpperCase()} ON A RIVAL...`, 'warn');
 }
@@ -179,7 +180,9 @@ setInterval(() => {
   // Paused while a Freeze runs (the server pushes the round end back by the freeze length).
   const now = sock.serverNow();
   const ms = Math.max(0, store.freezeEndsAt > now ? store.endsAt - store.freezeEndsAt : store.endsAt - now);
-  setHeat(store.phase === 'play' ? 1 - ms / balance.rounds.playMs : 0);
+  const heat = store.phase === 'play' ? 1 - ms / balance.rounds.playMs : 0;
+  setHeat(heat);
+  music.setIntensity(heat); // pitch and tempo climb as the round clock runs out
   t.textContent = `${Math.floor(ms / 60000)}:${String(Math.floor(ms / 1000) % 60).padStart(2, '0')}`;
   t.classList.toggle('low', ms < 10000 && store.phase === 'play');
   if (store.phase === 'briefing') { const el = $('brief-count'); if (el) el.textContent = Math.ceil(ms / 1000); }
