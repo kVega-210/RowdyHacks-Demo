@@ -1,5 +1,6 @@
-// CL-04 phone HUD: wallet, stash, bank remaining, countdown, hold-to-reveal secret target, key status.
-import { h, money, tap } from '../ui.js';
+// CL-04 phone HUD: wallet, your animal face, bank remaining, countdown, hold-to-reveal secret target.
+// v2: no stash cell (wallets are banked automatically at the end) and no key cell (stealing is gone).
+import { h, money } from '../ui.js';
 import { setHeat } from '../../fx/screen.js';
 
 export class Hud {
@@ -7,9 +8,7 @@ export class Hud {
     this.ctx = ctx;
     this.el = document.getElementById('hud');
     this.wallet = h('b', {}, '$0');
-    this.stash = h('b', {}, '$0');
-    this.key = h('b', {}, '-');
-    this.keyCell = h('div', { class: 'cell key' }, h('small', {}, 'Key'), this.key);
+    this.face = h('b', { class: 'face' }, '');
     this.meter = h('i', { style: { width: '100%' } });
     this.bank = h('span', {}, '');
     this.clock = h('span', { class: 'clock' }, '');
@@ -18,21 +17,16 @@ export class Hud {
     const reveal = (on) => {
       const t = ctx.store.me && ctx.store.me.target;
       this.target.classList.toggle('revealed', on && !!t);
-      this.targetName.textContent = on ? (t ? t.name : 'none yet') : '🎯 hold';
+      this.targetName.textContent = on ? (t ? `${t.face || ''} ${t.name}` : 'none yet') : '🎯 hold';
     };
     this.target.addEventListener('pointerdown', (e) => { e.preventDefault(); reveal(true); });
     ['pointerup', 'pointercancel', 'pointerleave'].forEach((ev) => this.target.addEventListener(ev, () => reveal(false)));
     this.el.append(
       h('div', { class: 'cell wallet' }, h('small', {}, 'Wallet'), this.wallet),
-      h('div', { class: 'cell stash' }, h('small', {}, 'Stash'), this.stash),
+      h('div', { class: 'cell me' }, h('small', {}, 'You'), this.face),
       this.target,
-      this.keyCell,
       h('div', { class: 'cell bank' }, h('small', {}, 'Bank'), h('div', { class: 'meter' }, this.meter), this.bank, this.clock),
     );
-    tap(this.keyCell, () => {
-      const s = ctx.store;
-      ctx.toast(s.vaultName ? `Your vault: ${s.vaultName}${s.keyCode ? ' · ' + s.keyCode : ''}` : 'No vault yet', 'gold', 3000);
-    });
     setInterval(() => this.tick(), 250);
   }
 
@@ -42,9 +36,7 @@ export class Hud {
     const me = state.players.find((p) => p.id === this.ctx.store.playerId);
     if (me) {
       this.wallet.textContent = money(me.wallet);
-      this.stash.textContent = money(me.stash);
-      this.key.textContent = me.key === 'stolen' ? 'STOLEN' : me.key === 'held' ? 'HELD' : 'NONE';
-      this.keyCell.classList.toggle('stolen', me.key === 'stolen');
+      this.face.textContent = me.face || '';
     }
     if (state.bank != null && state.bankStart) {
       this.meter.style.width = Math.max(0, (state.bank / state.bankStart) * 100) + '%';

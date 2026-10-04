@@ -6,6 +6,7 @@ export const meta = { id: 'password-cracker', name: 'Password Cracker', tags: ['
 css('mg-password-cracker', `
 .pc-clues{background:#000;border:2px solid #2a3555;border-radius:12px;padding:10px 14px;margin-bottom:12px;font:600 16px ui-monospace,monospace;color:#3dff9a}
 .pc-clues div:before{content:'> ';color:#4dd2ff}
+.pc-label{text-align:center;font:900 24px system-ui,sans-serif;letter-spacing:.12em;color:#ff5c7a;margin:0 0 10px;text-shadow:0 0 10px #ff224466}
 .pc-opts{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
 .pc-opts .hh-btn{font:900 26px ui-monospace,monospace;letter-spacing:.15em;min-height:62px}
 `);
@@ -26,8 +27,11 @@ const CLUES = [
 ];
 
 export function mount(container, opts) {
-  const g = game(container, opts, { id: meta.id, title: meta.name, hint: 'Only one password matches every clue', timeMs: 13000 });
-  const len = byD(g, 3, 4, 4), nOpts = byD(g, 3, 4, 6), nClues = byD(g, 2, 3, 3);
+  const g = game(container, opts, { id: meta.id, title: meta.name, hint: 'Only one password matches every clue', timeMs: 15000,
+    onTimeout: () => g.lose('timeout', null, { good: answerBtn }) });
+  // v2: easier than v1 (was 3/4/4 digits, 3/4/6 options, 2/3/3 clues, 13s).
+  const len = byD(g, 3, 3, 4), nOpts = byD(g, 3, 4, 4), nClues = byD(g, 2, 2, 3);
+  let answerBtn = null;
   const mk = () => Array.from({ length: len }, () => g.r.int(10)).join('');
   let answer, cands, clues;
   for (let tries = 0; tries < 500; tries++) {
@@ -40,9 +44,15 @@ export function mount(container, opts) {
     }
     if (decoys.length === nOpts - 1) { cands = g.r.shuffle([answer, ...decoys]); break; }
   }
+  const btns = cands.map((c) => {
+    const b = g.btn(c, () => (c === answer ? g.win(null, null, { matrix: true }) : g.lose('wrong password', null, { good: answerBtn, bad: b })), 'alt');
+    if (c === answer) answerBtn = b;
+    return b;
+  });
   g.stage.append(
     h('div', { class: 'pc-clues' }, clues.map(([t]) => h('div', {}, 'The password ' + t))),
-    h('div', { class: 'pc-opts' }, cands.map((c) => g.btn(c, () => (c === answer ? g.win() : g.lose('wrong password')), 'alt'))),
+    h('div', { class: 'pc-label' }, 'HACK!'),
+    h('div', { class: 'pc-opts' }, btns),
   );
   return g.handle();
 }

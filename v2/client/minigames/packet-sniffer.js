@@ -4,10 +4,10 @@ import { game, h, css, byD, SYMBOLS } from '../fx/kit.js';
 export const meta = { id: 'packet-sniffer', name: 'Packet Sniffer', tags: ['cyber'], baseDurationMs: 12000 };
 
 css('mg-packet-sniffer', `
-.ps-target{text-align:center;margin-bottom:8px;font-size:15px}.ps-target b{font-size:30px;letter-spacing:6px;color:#ffd84d}
+.ps-target{text-align:center;margin-bottom:8px;font-size:15px}.ps-target b{font-size:34px;letter-spacing:6px;color:#ffd84d}
 .ps-pipe{position:absolute;left:0;right:0;top:58px;bottom:0;border:2px solid #2a3555;border-radius:12px;overflow:hidden;background:#05070d}
 .ps-lane{position:absolute;left:0;right:0;height:25%}
-.ps-pkt{position:absolute;top:10%;height:80%;width:110px;padding:0;font-size:22px;letter-spacing:3px;background:#16213a;color:#4dd2ff;box-shadow:0 0 0 2px #4dd2ff inset}
+.ps-pkt{position:absolute;top:10%;height:80%;width:118px;padding:0;font-size:26px;letter-spacing:3px;background:#16213a;color:#4dd2ff;box-shadow:0 0 0 2px #4dd2ff inset}
 `);
 
 export function mount(container, opts) {
@@ -16,7 +16,7 @@ export function mount(container, opts) {
   const pool = SYMBOLS.slice(0, byD(g, 6, 6, 8));
   const target = Array.from({ length: len }, () => g.r.pick(pool)).join('');
   const pipe = h('div', { class: 'ps-pipe hh-ctl' });
-  g.stage.append(h('div', { class: 'ps-target' }, 'TARGET DATA ', h('b', {}, target)), pipe);
+  g.stage.append(h('div', { class: 'ps-target' }, 'TARGET DATA: ', h('b', {}, target)), pipe);
   const lanes = 4;
   const total = byD(g, 10, 14, 18);
   const targetAt = g.r.range(Math.floor(total * 0.25), Math.floor(total * 0.6));

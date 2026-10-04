@@ -37,7 +37,8 @@ class ModuleContractTest {
             String src = Files.readString(ROOT.resolve("client/minigames/" + g.id() + ".js"));
             assertTrue(src.contains("export function mount("), g.id() + " exports mount");
             if (g.hasTag("choice")) assertTrue(src.contains("wager"), g.id() + " choice games report wager");
-            if (g.hasTag("push-luck")) assertTrue(src.contains("hh-stake"), g.id() + " shows the cash at stake");
+            // v2: Last Second Grab dropped its "At stake" line on request; its climbing payout shows on the siren instead.
+            if (g.hasTag("push-luck") && !g.id().equals("last-second-grab")) assertTrue(src.contains("hh-stake"), g.id() + " shows the cash at stake");
         }
     }
 
@@ -48,7 +49,8 @@ class ModuleContractTest {
                 for (Path f : files.filter(p -> p.toString().endsWith(".js")).toList()) {
                     String src = Files.readString(f);
                     assertFalse(src.contains("localStorage") || src.contains("sessionStorage") || src.contains("indexedDB"), f + " uses storage");
-                    assertFalse(src.matches("(?s).*['\"`]https?://.*"), f + " references an external URL");
+                    String code = src.replace("http://www.w3.org/2000/svg", ""); // the SVG namespace is not a download
+                    assertFalse(code.matches("(?s).*['\"`]https?://.*"), f + " references an external URL");
                 }
             }
         }

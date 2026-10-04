@@ -54,20 +54,6 @@ public final class Cards {
                 long d = Wager.resolve(base, base, Wager.tier(b, b.s(key + ".tier")), passed);
                 return d >= 0 ? new Effect(Economy.payout(l, p, d), "doubled up") : new Effect(-Economy.penalty(l, p, -d), "nothing");
             }
-            case "shield" -> {
-                if (passed) {
-                    p.shield = true;
-                    return new Effect(0, "shield up: blocks the next steal");
-                }
-                return new Effect(-Economy.penalty(l, p, Math.abs(b.l(key + ".fail"))), "no shield");
-            }
-            case "stealBoost" -> {
-                if (passed) {
-                    p.stealBoost += b.d(key + ".extraPct");
-                    return new Effect(0, "next steal takes more");
-                }
-                return new Effect(-Economy.penalty(l, p, Math.abs(b.l(key + ".fail"))), "no boost");
-            }
             default -> {
                 return new Effect(0, "no effect");
             }

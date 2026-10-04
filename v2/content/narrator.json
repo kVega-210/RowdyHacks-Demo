@@ -14,7 +14,7 @@
     {
       "id": "game_start_2",
       "event": "game_start",
-      "text": "Phones out, keys on the table. The vault opens now."
+      "text": "Phones out, faces on. The vault opens now."
     },
     {
       "id": "game_start_3",
@@ -74,7 +74,7 @@
     {
       "id": "round_breakin_1",
       "event": "round_breakin",
-      "text": "Break-in round. Keys are live. Guard your pockets."
+      "text": "Break-in round. Lasers, locks and guards. Move."
     },
     {
       "id": "round_breakin_2",
@@ -84,7 +84,7 @@
     {
       "id": "round_hack_1",
       "event": "round_hack",
-      "text": "Hack round. No stealing, bigger payouts. Type fast."
+      "text": "Hack round. Bigger payouts. Type fast."
     },
     {
       "id": "round_hack_2",
@@ -209,12 +209,12 @@
     {
       "id": "bank_0_1",
       "event": "bank_0",
-      "text": "The bank is empty! Everybody run!"
+      "text": "The bank is empty! Heist over, wallets banked."
     },
     {
       "id": "bank_0_2",
       "event": "bank_0",
-      "text": "Nothing left to steal. Escape, escape, escape!"
+      "text": "Not a dollar left. Count your loot."
     },
     {
       "id": "escape_1",

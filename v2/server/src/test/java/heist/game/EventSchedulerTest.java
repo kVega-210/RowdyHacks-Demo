@@ -18,7 +18,7 @@ class EventSchedulerTest {
     void windowsRespectEdgesAndGaps() {
         long play = b.l("rounds.playMs");
         for (long seed = 0; seed < 500; seed++) {
-            List<EventScheduler.Scheduled> plan = EventScheduler.plan(b, new Rng(seed), true, play);
+            List<EventScheduler.Scheduled> plan = EventScheduler.plan(b, new Rng(seed), play);
             for (int i = 0; i < plan.size(); i++) {
                 EventScheduler.Scheduled e = plan.get(i);
                 assertTrue(e.atMs() >= b.l("events.noneInFirstMs"), "none in the opening seconds");
@@ -29,19 +29,10 @@ class EventSchedulerTest {
     }
 
     @Test
-    void noStealsInHackRounds() {
-        for (long seed = 0; seed < 200; seed++) {
-            for (var e : EventScheduler.plan(b, new Rng(seed), false, b.l("rounds.playMs"))) {
-                assertFalse(e.kind() == EventScheduler.Kind.STEAL);
-            }
-        }
-    }
-
-    @Test
     void atMostOneFreezePerRoundAndItLeavesRoomForTheWarning() {
         int rounds = 0, freezes = 0;
         for (long seed = 0; seed < 1000; seed++) {
-            var plan = EventScheduler.plan(b, new Rng(seed), true, b.l("rounds.playMs"));
+            var plan = EventScheduler.plan(b, new Rng(seed), b.l("rounds.playMs"));
             long f = plan.stream().filter(e -> e.kind() == EventScheduler.Kind.FREEZE).count();
             assertTrue(f <= 1);
             freezes += (int) f;
@@ -55,11 +46,11 @@ class EventSchedulerTest {
 
     @Test
     void sameSeedSamePlan() {
-        assertEquals(EventScheduler.plan(b, new Rng(42), true, 50000), EventScheduler.plan(b, new Rng(42), true, 50000));
+        assertEquals(EventScheduler.plan(b, new Rng(42), 50000), EventScheduler.plan(b, new Rng(42), 50000));
     }
 
     @Test
     void tinyRoundsDropEventsInsteadOfBreakingRules() {
-        assertTrue(EventScheduler.plan(b, new Rng(1), true, 6000).isEmpty());
+        assertTrue(EventScheduler.plan(b, new Rng(1), 6000).isEmpty());
     }
 }

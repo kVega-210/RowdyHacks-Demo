@@ -8,10 +8,17 @@ styleOnce('false-alarm', `
 .mod-alarm{position:absolute;inset:0;z-index:40;pointer-events:none;display:flex;align-items:center;justify-content:center;
   font:900 34px system-ui,sans-serif;color:#fff;text-shadow:0 3px 0 #000;letter-spacing:.06em;animation:modAlarm .5s steps(2) infinite}
 @keyframes modAlarm{0%{background:rgba(255,0,40,.35)}100%{background:rgba(255,0,40,0)}}
-.mod-alarm span{transform:rotate(-8deg);border:4px solid #fff;padding:6px 14px;border-radius:10px;background:#ff2244aa}
+.mod-alarm span{max-width:86%;text-align:center;overflow-wrap:anywhere;transform:rotate(-8deg);border:4px solid #fff;padding:6px 14px;border-radius:10px;background:#ff2244aa}
 `);
 
-const TEXT = ['⚠️ ALARM!', 'INTRUDER!', 'SECURITY BREACH', 'POLICE EN ROUTE', 'YOU ARE BEING WATCHED'];
+// v2: the fake alerts come in random languages.
+const TEXT = [
+  '⚠️ ¡ALARMA!', '⚠️ ALARME !', '⚠️ ALLARME!', '⚠️ ALARM!', '⚠️ ALARME!', '⚠️ ТРЕВОГА!', '⚠️ 警報！', '⚠️ 警报！', '⚠️ 경보!',
+  '⚠️ إنذار!', '⚠️ अलार्म!', '⚠️ ALARM!', '⚠️ HÄLYTYS!', '⚠️ LARM!', '⚠️ ALARMA!', '⚠️ ΣΥΝΑΓΕΡΜΟΣ!', '⚠️ אזעקה!', '⚠️ ALARM!',
+  '¡INTRUSO!', 'EINDRINGLING!', 'INTRUS !', 'НАРУШИТЕЛЬ!', '侵入者！', '入侵者！', '침입자!', 'INTRUSO!', 'INDRINGER!',
+  'ALERTE SÉCURITÉ', 'SICHERHEITSALARM', 'ALLERTA SICUREZZA', 'ALERTA DE SEGURANÇA', 'GÜVENLİK İHLALİ', 'BEZPEČNOSTNÍ POPLACH',
+  '¡LA POLICÍA VIENE!', 'POLIZEI KOMMT!', 'LA POLICE ARRIVE !', '警察が来る！', 'ПОЛИЦИЯ ЕДЕТ!', 'POLISI DATANG!', 'POLISEN KOMMER!',
+];
 
 export function applyModifier(el, { duration = 6000, strength = 0.5 } = {}) {
   if (getComputedStyle(el).position === 'static') el.style.position = 'relative';

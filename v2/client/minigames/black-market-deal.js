@@ -10,6 +10,10 @@ css('mg-bmd', `
 .bmd-price{text-align:center;font:900 40px ui-monospace,monospace;color:#3dff9a;min-height:50px}
 .bmd-opts{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:10px}
 .bmd-opts .hh-btn{font:900 24px ui-monospace,monospace;min-height:60px}
+/* Bigger briefcases on the chooser tiles (scoped to this game; the 💼 glyph has lots of padding, so overscale it and
+   lift it clear of the label tab). */
+.hh-game[data-game="black-market-deal"] .hh-choose .opts.tiles{gap:8px}
+.hh-game[data-game="black-market-deal"] .hh-choose .opts.tiles .opt .icon{font-size:112cqh;transform:translateY(-8%)}
 `);
 
 export function mount(container, opts) {

@@ -3,6 +3,7 @@
   "modifiers": [
     {
       "id": "shrunken-buttons",
+      "icon": "🤏",
       "name": "Tiny Buttons",
       "file": "/modifiers/shrunken-buttons.js",
       "description": "Shrinks every button. Still tappable, just fiddly.",
@@ -10,6 +11,7 @@
     },
     {
       "id": "screen-jitter",
+      "icon": "🫨",
       "name": "Earthquake",
       "file": "/modifiers/screen-jitter.js",
       "description": "Gently shakes the minigame a couple of pixels.",
@@ -17,13 +19,15 @@
     },
     {
       "id": "false-alarm",
+      "icon": "🚨",
       "name": "False Alarm",
       "file": "/modifiers/false-alarm.js",
-      "description": "Flashes fake ALARM warnings that do nothing (taps pass straight through).",
+      "description": "Flashes fake alarm warnings in random languages that do nothing (taps pass straight through).",
       "pick": "Set off a fake alarm."
     },
     {
       "id": "jam-the-signal",
+      "icon": "📡",
       "name": "Jam the Signal",
       "file": "/modifiers/jam-the-signal.js",
       "description": "Static noise and twitching controls. Also the Hacker vs. Hacker scramble.",

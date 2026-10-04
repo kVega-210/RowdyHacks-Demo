@@ -80,7 +80,8 @@ export class Runner {
     const opts = {
       difficulty: a.difficulty, speed: a.speed, seed: a.seed, tiers: balance.wager.tiers,
       // Base cash for one success at this difficulty, for games that show money amounts (e.g. Alarm Jackpot).
-      basePayout: Math.round(balance.payout.byDifficulty[a.difficulty - 1] * typeMult),
+      // v2: times this round's payout scale (the bank is spread over the rounds left).
+      basePayout: Math.round(balance.payout.byDifficulty[a.difficulty - 1] * typeMult * ((round && round.payoutScale) || 1)),
       onSuccess: (r) => report(true, r), onFail: (r) => report(false, r),
     };
     try {

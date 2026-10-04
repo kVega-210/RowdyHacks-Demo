@@ -7,7 +7,7 @@ export function briefingReveal(round) {
   if (!round || !round.target) return null;
   return h('div', { class: 'card center' },
     h('div', { class: 'muted' }, 'SECRET TARGET (only you can see this)'),
-    h('div', { style: { fontSize: '28px', fontWeight: 900, color: 'var(--red)' } }, '🎯 ' + round.target.name),
+    h('div', { style: { fontSize: '28px', fontWeight: 900, color: 'var(--red)' } }, `🎯 ${round.target.face || ''} ${round.target.name}`),
     h('div', { class: 'muted' }, 'Out-earn them this round for a bounty. Hold the 🎯 box on your HUD to peek again.'));
 }
 

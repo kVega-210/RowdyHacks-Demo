@@ -6,8 +6,8 @@ import java.util.Comparator;
 import java.util.List;
 
 /**
- * BE-09 final standings. Winner = highest stash. Tie-break, in order: fewer fails, more successes,
- * escaped earlier (not escaping counts as last), then join order. Join order is unique, so there is
+ * BE-09 final standings. Winner = highest stash (v2: every wallet is banked automatically at the end).
+ * Tie-break, in order: fewer fails, more successes, then join order. Join order is unique, so there is
  * always exactly one winner.
  */
 public final class Endgame {
@@ -17,7 +17,6 @@ public final class Endgame {
             .comparingLong((PlayerState p) -> -p.stash)
             .thenComparingInt(p -> p.fails)
             .thenComparingInt(p -> -p.successes)
-            .thenComparingLong(p -> p.escapedAt < 0 ? Long.MAX_VALUE : p.escapedAt)
             .thenComparingInt(p -> p.joinOrder);
 
     public static List<PlayerState> standings(Collection<PlayerState> players) {

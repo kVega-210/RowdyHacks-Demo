@@ -57,7 +57,7 @@ public final class RoastInput {
                 case "freeze_violation" -> {
                     if (f != null) add(f, "freezeViolations", 1);
                 }
-                case "escape" -> {
+                case "escape", "auto_bank" -> {
                     if (f != null) f.put("escaped", true);
                 }
                 case "wallet_lost" -> {
@@ -75,8 +75,9 @@ public final class RoastInput {
 
     /** Deterministic awards so the fallback roast and the Gemini prompt agree. */
     public static Map<String, Object> awards(Map<String, Map<String, Object>> facts) {
-        String thief = maxBy(facts, "cashStolen");
-        String closest = maxBy(facts, "lostAtEnd");
+        // v2 (no stealing, no lost wallets): the biggest thief cracked the most jobs, the closest call broke the most freezes.
+        String thief = maxBy(facts, "wins");
+        String closest = maxBy(facts, "freezeViolations");
         // Chicken: escaped having won the fewest minigames.
         String chicken = null;
         long fewest = Long.MAX_VALUE;

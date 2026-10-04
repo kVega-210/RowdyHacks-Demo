@@ -4,18 +4,19 @@ import { game, h, css, byD, drag } from '../fx/kit.js';
 export const meta = { id: 'laser-grid', name: 'Laser Grid', tags: ['classic'], baseDurationMs: 12000 };
 
 css('mg-laser-grid', `
-.lg-field{position:absolute;inset:0;background:#05070d;border:2px solid #2a3555;border-radius:12px;overflow:hidden;touch-action:none}
-.lg-goal{position:absolute;left:0;right:0;top:0;height:9%;background:#3dff9a33;border-bottom:2px dashed #3dff9a;text-align:center;font-weight:900;color:#3dff9a;padding-top:4px}
+.lg-field{position:absolute;inset:0 0 40px;background:#05070d;border:2px solid #2a3555;border-radius:12px;overflow:hidden;touch-action:none}
+.lg-goal{position:absolute;left:0;right:0;top:0;height:9%;background:#3dff9a33;border-bottom:2px dashed #3dff9a;display:flex;align-items:center;justify-content:center;font-size:28px;line-height:1}
 .lg-beam{position:absolute;height:6px;background:#ff2244;box-shadow:0 0 10px #ff2244,0 0 2px #fff;border-radius:3px}
-.lg-dot{position:absolute;width:28px;height:28px;margin:-14px 0 0 -14px;border-radius:50%;background:#ffd84d;border:3px solid #fff;box-shadow:0 0 12px #ffd84d}
+.lg-dot{position:absolute;width:34px;height:34px;margin:-17px 0 0 -17px;font-size:30px;line-height:34px;text-align:center;filter:drop-shadow(0 0 6px #ffd84d)}
+.lg-label{position:absolute;left:0;right:0;bottom:0;height:34px;line-height:34px;text-align:center;font:900 24px/34px system-ui,sans-serif;letter-spacing:.12em;color:#ff5c7a;text-shadow:0 0 10px #ff224466}
 `);
 
 export function mount(container, opts) {
   const g = game(container, opts, { id: meta.id, title: meta.name, hint: 'Drag to the vault. Do not touch the lasers!', timeMs: 12000 });
-  const field = h('div', { class: 'lg-field hh-ctl' }, h('div', { class: 'lg-goal', text: 'VAULT' }));
-  const dot = h('div', { class: 'lg-dot' });
+  const field = h('div', { class: 'lg-field hh-ctl' }, h('div', { class: 'lg-goal', text: '💰' }));
+  const dot = h('div', { class: 'lg-dot' }, '🥷');
   field.append(dot);
-  g.stage.append(field);
+  g.stage.append(field, h('div', { class: 'lg-label' }, 'ESCAPE!'));
   const rows = byD(g, 3, 4, 5);
   const gapW = byD(g, 0.34, 0.28, 0.24);
   const beams = [];

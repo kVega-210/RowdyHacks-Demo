@@ -44,7 +44,7 @@ export function mount(container, opts) {
     pos = [nx, ny];
     draw(g.elapsed);
     if (isOn(nx + ',' + ny, g.elapsed)) return g.lose('tripped security');
-    if (nx === exit[0] && ny === exit[1]) g.win();
+    if (nx === exit[0] && ny === exit[1]) g.win(null, null, { matrix: true });
   };
   g.loop((dt, t) => {
     draw(t);

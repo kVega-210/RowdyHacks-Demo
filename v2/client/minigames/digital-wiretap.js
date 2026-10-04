@@ -42,7 +42,7 @@ export function mount(container, opts) {
     if (real) text = `package ${code} is ready`;
     else if (g.d >= 2 && g.r.chance(0.35)) text = g.r.chance(0.5) ? `${key} says ${g.r.pick(FILLER)}` : `room ${g.r.range(10, 99)}: ${g.r.pick(FILLER)}`;
     else text = g.r.pick(FILLER);
-    const b = g.btn('', () => (real ? g.win() : g.lose('wrong message', null, { good: realBtn && realBtn.isConnected ? realBtn : null, bad: b })));
+    const b = g.btn('', () => (real ? g.win(null, null, { matrix: true }) : g.lose('wrong message', null, { good: realBtn && realBtn.isConnected ? realBtn : null, bad: b })));
     b.append(h('em', {}, g.r.pick(WHO) + ':'), text);
     if (real) realBtn = b;
     // Newest on top of the feed (which starts mid-screen); older messages are pushed down and off the bottom.

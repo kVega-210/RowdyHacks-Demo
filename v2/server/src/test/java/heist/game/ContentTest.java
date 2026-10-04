@@ -12,8 +12,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ContentTest {
     @Test
-    void fifteenCardsKeyedToBalanceWithOptOuts() {
-        assertEquals(15, TestSupport.CONTENT.cards.size());
+    void elevenCardsKeyedToBalanceWithOptOuts() {
+        // v2: the four steal cards (Shield, Steal Boost) were removed with stealing.
+        assertEquals(11, TestSupport.CONTENT.cards.size());
         for (Content.Card c : TestSupport.CONTENT.cards.values()) {
             assertTrue(TestSupport.BALANCE.has("cards." + c.effect()), "card " + c.number() + " effect " + c.effect() + " must exist in balance.json");
         }

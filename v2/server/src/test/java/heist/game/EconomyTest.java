@@ -23,33 +23,18 @@ class EconomyTest {
     }
 
     @Test
-    void penaltyNeverTakesTheWalletNegativeAndIsBurned() {
+    void penaltyNeverTakesTheWalletNegativeAndGoesBackToTheBank() {
         Economy.Ledger l = new Economy.Ledger(1000);
         PlayerState a = p();
         Economy.payout(l, a, 30);
         assertEquals(30, Economy.penalty(l, a, 50));
         assertEquals(0, a.wallet);
-        assertEquals(30, l.burned);
-        assertEquals(970, l.bank, "penalties are burned, never returned to the bank");
+        assertEquals(0, l.burned);
+        assertEquals(1000, l.bank, "v2: penalties go back into the bank");
     }
 
     @Test
-    void stealTransfersWalletCashOnly() {
-        PlayerState v = p(), t = new PlayerState("p2", "B", 2, false);
-        v.wallet = 400;
-        v.stash = 1000;
-        long amt = Economy.stealAmount(v.wallet, 0.25, 100, 0);
-        assertEquals(100, amt);
-        assertEquals(100, Economy.transfer(v, t, amt));
-        assertEquals(300, v.wallet);
-        assertEquals(1000, v.stash, "stash is safe");
-        assertEquals(100, t.wallet);
-        assertEquals(30, Economy.stealAmount(30, 0.25, 100, 0), "never more than the victim has");
-        assertEquals(400, Economy.stealAmount(1000, 0.25, 100, 0.15));
-    }
-
-    @Test
-    void escapeBanksAndEndLosesWallet() {
+    void endOfGameBanksEveryWallet() {
         Economy.Ledger l = new Economy.Ledger(1000);
         PlayerState a = p(), c = new PlayerState("p2", "B", 2, false);
         Economy.payout(l, a, 200);
@@ -57,9 +42,18 @@ class EconomyTest {
         assertEquals(200, Economy.bankWallet(a));
         assertEquals(200, a.stash);
         assertEquals(0, a.wallet);
-        assertEquals(300, Economy.loseWallet(l, c));
+        assertEquals(300, Economy.bankWallet(c));
         assertEquals(0, c.wallet);
         assertEquals(1000, l.bank + l.burned + a.wallet + a.stash + c.wallet + c.stash);
+    }
+
+    @Test
+    void roundScaleSpreadsTheBankOverTheRoundsLeft() {
+        // 4 players x 3 paid jobs x $100 = $1200 unscaled per round.
+        assertEquals(2.0, Economy.roundScale(14400, 6, 0, 4, 100, 1.0, 3, 0.5, 8, 0.75));
+        assertEquals(0.5, Economy.roundScale(100, 6, 0, 4, 100, 1.0, 3, 0.5, 8, 0.75), "never below the floor");
+        assertEquals(8.0, Economy.roundScale(10_000_000, 1, 0, 4, 100, 1.0, 3, 0.5, 8, 0.75), "capped in regular rounds");
+        assertTrue(Economy.roundScale(12000, 1, 2, 4, 100, 1.0, 3, 0.5, 8, 0.75) > 10, "overtime lifts the cap and pays harder");
     }
 
     @Test

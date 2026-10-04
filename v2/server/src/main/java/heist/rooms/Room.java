@@ -127,8 +127,7 @@ public final class Room implements Outbox {
         bindPhone(c, p.id);
         String token = tokens.issue(p.id);
         c.send(Json.msg("welcome", "role", "phone", "room", code, "playerId", p.id, "name", p.name, "token", token,
-                "vault", p.vaultNo > 0 ? p.vaultNo : null, "vaultName", p.vaultName, "keyCode", engine.settings.virtualKeys ? p.keyCode : null,
-                "virtualKeys", engine.settings.virtualKeys));
+                "face", p.face));
         engine.resync(p.id, clock.now());
     }
 
@@ -142,8 +141,7 @@ public final class Room implements Outbox {
         bindPhone(c, pid);
         engine.setConnected(pid, true, clock.now());
         c.send(Json.msg("welcome", "role", "phone", "room", code, "playerId", p.id, "name", p.name, "token", token,
-                "vault", p.vaultNo > 0 ? p.vaultNo : null, "vaultName", p.vaultName, "keyCode", engine.settings.virtualKeys ? p.keyCode : null,
-                "virtualKeys", engine.settings.virtualKeys, "resumed", true));
+                "face", p.face, "resumed", true));
         engine.resync(pid, clock.now());
     }
 

@@ -22,8 +22,8 @@ import java.util.function.Consumer;
 
 /**
  * TL-01 protocol bot. Speaks exactly what a phone speaks: join, play (reporting results with a configurable
- * success rate), steal during Steal windows, sometimes twitch during Freeze, grab in Bank Raids, play cards,
- * sabotage, escape, and randomly drop and resume its connection with the session token.
+ * success rate), sometimes twitch during Freeze, grab in Bank Raids, play cards, sabotage, and randomly drop
+ * and resume its connection with the session token.
  * All delays are in game milliseconds and divided by {@code timeScale}.
  */
 public final class Bot {
@@ -38,12 +38,9 @@ public final class Bot {
         public double successRate = 0.7;
         public long thinkMinMs = 1500;
         public long thinkMaxMs = 6000;
-        public double scanChance = 0.5;
         public double freezeViolationChance = 0.15;
-        public double escapeChance = 0.9;
         public double disconnectChance = 0.02;
         public double timeScale = 1.0;
-        public boolean spamScans = false;
         public long seed = System.nanoTime();
 
         public static Config fromBalance(Balance b, double timeScale) {
@@ -51,9 +48,7 @@ public final class Bot {
             c.successRate = b.d("bots.successRate");
             c.thinkMinMs = b.l("bots.thinkMinMs");
             c.thinkMaxMs = b.l("bots.thinkMaxMs");
-            c.scanChance = b.d("bots.scanChance");
             c.freezeViolationChance = b.d("bots.freezeViolationChance");
-            c.escapeChance = b.d("bots.escapeChance");
             c.disconnectChance = b.d("bots.disconnectChance");
             c.timeScale = timeScale;
             return c;
@@ -197,28 +192,23 @@ public final class Bot {
                             "wager", Json.obj("tier", String.valueOf(1 + rnd.nextInt(3)))));
                 });
             }
-            case "steal_open" -> {
-                if (cfg.spamScans) {
-                    for (int i = 0; i < 6; i++) later(rnd.nextInt(800), this::scanSomeone);
-                } else if (rnd.nextDouble() < cfg.scanChance) {
-                    later(rnd.nextInt(2500), this::scanSomeone);
-                }
-            }
             case "freeze_start" -> {
                 if (rnd.nextDouble() < cfg.freezeViolationChance) later(rnd.nextInt(2000), () -> send(Json.msg("freeze_violation")));
             }
             case "bankraid_open" -> later(200 + rnd.nextInt(2500), () -> send(Json.msg("bankraid_grab")));
             case "between" -> {
-                if (m.path("sabotage").asBoolean() && rnd.nextDouble() < 0.35 && !others.isEmpty()) {
+                List<String> targets = new ArrayList<>(others);
+                m.path("immune").forEach(x -> targets.remove(x.asText()));
+                if (m.path("sabotage").asBoolean() && rnd.nextDouble() < 0.35 && !targets.isEmpty()) {
                     List<String> mods = new ArrayList<>();
                     m.path("modifiers").forEach(x -> mods.add(x.asText()));
                     if (!mods.isEmpty()) {
-                        String target = others.get(rnd.nextInt(others.size()));
+                        String target = targets.get(rnd.nextInt(targets.size()));
                         String mod = mods.get(rnd.nextInt(mods.size()));
                         later(500 + rnd.nextInt(3000), () -> send(Json.msg("sabotage", "targetId", target, "modifier", mod)));
                     }
                 }
-                if (rnd.nextDouble() < 0.15) later(500 + rnd.nextInt(2000), () -> send(Json.msg("card_play", "number", 1 + rnd.nextInt(15))));
+                if (rnd.nextDouble() < 0.15) later(500 + rnd.nextInt(2000), () -> send(Json.msg("card_play", "number", 1 + rnd.nextInt(11))));
             }
             case "card_vote_open" -> {
                 if (!Json.str(m, "playerId", "").equals(playerId)) {
@@ -230,9 +220,6 @@ public final class Bot {
                 int uses = m.path("uses").asInt();
                 for (int i = 0; i < uses; i++) later(2000 + rnd.nextInt(15000), () -> send(Json.msg("hack_scramble")));
             }
-            case "escape_open" -> {
-                if (rnd.nextDouble() < cfg.escapeChance) later(300 + rnd.nextInt(4000), () -> send(Json.msg("escape")));
-            }
             case "final_standings" -> {
                 finalStandings = m;
                 done = true;
@@ -242,12 +229,6 @@ public final class Bot {
             case "kicked" -> stop();
             default -> { }
         }
-    }
-
-    private void scanSomeone() {
-        List<String> o = others;
-        if (o.isEmpty()) return;
-        send(Json.msg("key_scan", "victim", o.get(rnd.nextInt(o.size()))));
     }
 
     private final class Listener implements WebSocket.Listener {

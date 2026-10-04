@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * CLI for TL-01: {@code bots --url ws://localhost:7071/ws --room ABCD --count 6 [--success 0.7] [--spam]}.
+ * CLI for TL-01: {@code bots --url ws://localhost:7071/ws --room ABCD --count 6 [--success 0.7]}.
  * Without --room it creates a room itself (acting as host), fills it and starts the game.
  */
 public final class Bots {
@@ -22,7 +22,6 @@ public final class Bots {
         Balance b = Balance.load(Paths.root());
         Bot.Config cfg = Bot.Config.fromBalance(b, Double.parseDouble(a.getOrDefault("scale", "1")));
         if (a.containsKey("success")) cfg.successRate = Double.parseDouble(a.get("success"));
-        cfg.spamScans = a.containsKey("spam");
         if (a.containsKey("disconnect")) cfg.disconnectChance = Double.parseDouble(a.get("disconnect"));
 
         String room = a.get("room");
@@ -41,7 +40,6 @@ public final class Bots {
         for (int i = 0; i < count; i++) {
             Bot.Config c = Bot.Config.fromBalance(b, cfg.timeScale);
             c.successRate = cfg.successRate;
-            c.spamScans = cfg.spamScans;
             c.disconnectChance = cfg.disconnectChance;
             c.seed = cfg.seed + i;
             bots.add(Bot.launch(url, room, "Bot" + (i + 1), c));

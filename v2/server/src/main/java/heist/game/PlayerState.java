@@ -9,6 +9,8 @@ public final class PlayerState {
     public final String name;
     public final int joinOrder;
     public final boolean bot;
+    /** v2: animal face shown instead of the name on small targeting buttons. */
+    public String face = "🐶";
 
     public boolean connected = true;
     public long disconnectedAt = -1;
@@ -16,13 +18,6 @@ public final class PlayerState {
     // Money (BE-05). Wallet is at risk, stash is safe.
     public long wallet;
     public long stash;
-
-    // Physical bridge
-    public String keyCode;
-    public int vaultNo;
-    public String vaultName;
-    public boolean keyStolen;
-    public String keyHeldBy;
 
     // Per round
     public String target;
@@ -34,10 +29,10 @@ public final class PlayerState {
     public boolean sabotageUsed;
     public int cardsPlayed;
     public long jammedUntil = -1;
-
-    // Card effects
-    public boolean shield;
-    public double stealBoost;
+    // v2 attack spacing: was the current / previous minigame hit by a sabotage or scramble?
+    public boolean curHit;
+    public boolean prevHit;
+    public int lastHitRound;
 
     // Teams (TM-01)
     public String team;
@@ -45,20 +40,12 @@ public final class PlayerState {
     // Lifetime stats
     public int successes;
     public int fails;
-    public int steals;
-    public long stolenAmount;
-    public int timesRobbed;
-    public long lostToThieves;
     public int freezeViolations;
     public int bounties;
     public long bestStreak;
     public long streak;
     public long peakWallet;
 
-    // Endgame
-    public boolean escaped;
-    public long escapedAt = -1;
-    public long lostAtEnd;
 
     public PlayerState(String id, String name, int joinOrder, boolean bot) {
         this.id = id;

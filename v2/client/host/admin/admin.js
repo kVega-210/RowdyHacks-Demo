@@ -1,6 +1,6 @@
 // TL-02 hidden host-only debug/admin panel. Open with ?admin=1, the backtick key, or triple-click the logo.
 const ACTIONS = [
-  ['force_steal', 'Force STEAL'], ['force_freeze', 'Force FREEZE'], ['force_bankraid', 'Force BANK RAID'],
+  ['force_freeze', 'Force FREEZE'], ['force_bankraid', 'Force BANK RAID'],
   ['skip_round', 'Skip phase'], ['end_game', 'End game'],
 ];
 

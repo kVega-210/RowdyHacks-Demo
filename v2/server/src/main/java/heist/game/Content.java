@@ -19,6 +19,10 @@ public final class Content {
     public final List<String> vaultNames = new ArrayList<>();
     public final List<String> teamNames = new ArrayList<>();
     public final List<String> aliases = new ArrayList<>();
+    /** v2: player faces (flavor.json "animalFaces"); the defaults are used when the file has none. */
+    public final List<String> animalFaces = new ArrayList<>();
+    private static final List<String> DEFAULT_FACES = List.of("🐶", "🐱", "🐭", "🐹", "🐰", "🦊", "🐻", "🐼", "🐨", "🐯",
+            "🦁", "🐮", "🐷", "🐸", "🐵", "🐺", "🐗", "🐴", "🦄", "🐲");
     public final JsonNode flavor;
 
     public Content(Path root) {
@@ -32,6 +36,8 @@ public final class Content {
         flavor.path("vaultNames").forEach(n -> vaultNames.add(n.asText()));
         flavor.path("teamNames").forEach(n -> teamNames.add(n.asText()));
         flavor.path("aliases").forEach(n -> aliases.add(n.asText()));
+        flavor.path("animalFaces").forEach(n -> animalFaces.add(n.asText()));
+        if (animalFaces.isEmpty()) animalFaces.addAll(DEFAULT_FACES);
     }
 
     public String vaultName(int vaultNo) {

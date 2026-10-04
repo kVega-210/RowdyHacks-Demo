@@ -10,7 +10,8 @@ css('mg-backdoor', `
 .bd-track{position:relative;height:84px;border-radius:14px;background:#121a2e;border:2px solid #2a3555;margin:18px 0;overflow:visible}
 .bd-lock{position:absolute;top:0;bottom:0;display:flex;align-items:center;justify-content:center;font-size:46px;
   background:#ffd84d1f;border-left:2px dashed #ffd84d77;border-right:2px dashed #ffd84d77}
-.bd-key{position:absolute;top:50%;font-size:42px;line-height:1;transform:translate(-50%,-50%) rotate(-45deg);filter:drop-shadow(0 0 6px #ffd84d)}
+.bd-key{position:absolute;top:50%;font-size:42px;line-height:1;transform:translate(-50%,-50%) rotate(-135deg);filter:drop-shadow(0 0 6px #ffd84d)}
+/* The 🔑 glyph points down-left; -135deg lays it sideways with the blade pointing right, into the lock. */
 .bd-open{position:absolute;top:50%;font-size:46px;transform:translate(-50%,-50%);pointer-events:none;animation:bdRise .9s ease-out forwards}
 @keyframes bdRise{0%{transform:translate(-50%,-50%) scale(1);opacity:1}100%{transform:translate(-50%,-180%) scale(1.3);opacity:0}}
 .bd-hit{display:block;margin:0 auto;width:80%;height:66px;font-size:26px}
@@ -23,8 +24,8 @@ export function mount(container, opts) {
     title: 'Backdoor', prompt: 'Deeper doors hide more cash', timeoutMs: 5000, layout: 'tiles',
     options: tierOptions(opts, [
       { tier: '1', label: 'Service door', icon: '🚪', cash: '$', risk: 'safe' },
-      { tier: '2', label: 'Server room', icon: '🚪', cash: '$$', risk: 'risky' },
-      { tier: '3', label: 'The core', icon: '🚪', cash: '$$$', risk: 'wild' },
+      { tier: '2', label: 'Server room', icon: '🚪🚪', cash: '$$', risk: 'risky' },
+      { tier: '3', label: 'The core', icon: '🚪🚪🚪', cash: '$$$', risk: 'wild' },
     ]),
     onPick(o) { wager = { tier: o.tier }; start(Number(o.tier)); },
   });

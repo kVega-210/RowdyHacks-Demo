@@ -79,7 +79,6 @@ public final class GameEngine {
     private List<EventScheduler.Scheduled> plan = List.of();
     private int planIdx;
     private final Set<Integer> freezeWarned = new HashSet<>();
-    private StealArbiter steal;
     private long freezeStart = -1;
     private long freezeEndsAt = -1;
     private final Set<String> freezeViolators = new HashSet<>();
@@ -89,6 +88,11 @@ public final class GameEngine {
     private Map<String, String> targets = new HashMap<>();
     private Map<String, String> teamOf = new LinkedHashMap<>();
     private final Map<String, Long> walletAtRoundStart = new HashMap<>();
+    /** v2: this round's payout multiplier so the bank drains over the chosen rounds (Economy.roundScale). */
+    private double payoutScale = 1.0;
+    /** v2: paid jobs per player last regular round, so the scale learns how fast this crew actually earns. */
+    private double paidJobsPerPlayer = -1;
+    private int roundSuccesses;
 
     // Between phase
     private final Map<String, Cards.Vote> votes = new LinkedHashMap<>();
@@ -129,8 +133,8 @@ public final class GameEngine {
             if (p.name.equalsIgnoreCase(name)) name = name + (players.size() + 1);
         }
         PlayerState p = new PlayerState("p" + (++idCounter), name, ++joinCounter, bot);
+        p.face = freeFace();
         players.put(p.id, p);
-        if (settings.virtualKeys || bot) giveVirtualKey(p);
         log.log(roomId, 0, p.id, "join", Json.obj("name", name, "bot", bot));
         dirty = true;
         return p;
@@ -142,34 +146,13 @@ public final class GameEngine {
         return n.length() > 16 ? n.substring(0, 16) : n;
     }
 
-    private void giveVirtualKey(PlayerState p) {
-        if (p.keyCode != null) return;
-        int n = freeVault();
-        p.vaultNo = n;
-        p.vaultName = content.vaultName(n);
-        p.keyCode = signer.code(n);
-    }
-
-    private int freeVault() {
-        Set<Integer> used = new HashSet<>();
-        players.values().forEach(x -> used.add(x.vaultNo));
-        for (int i = 1; ; i++) if (!used.contains(i)) return i;
-    }
-
-    /** Scan a physical key tag at join to claim its vault (CL-06). */
-    public void claimKey(String pid, String code) {
-        PlayerState p = player(pid);
-        int n = signer.verify(code);
-        if (n < 1) throw new GameError("bad_key", "That key is not one of ours");
-        for (PlayerState o : players.values()) {
-            if (o != p && o.vaultNo == n) throw new GameError("key_taken", "Someone already claimed that vault");
-        }
-        p.vaultNo = n;
-        p.vaultName = content.vaultName(n);
-        p.keyCode = signer.code(n);
-        out.toPlayer(pid, Json.msg("key_claimed", "vault", n, "vaultName", p.vaultName));
-        log.log(roomId, round, pid, "key_claim", Json.obj("vault", n));
-        dirty = true;
+    /** v2: every player gets a random animal face nobody else in the room has (repeats only past the list). */
+    private String freeFace() {
+        Set<String> used = new HashSet<>();
+        players.values().forEach(x -> used.add(x.face));
+        List<String> free = new ArrayList<>();
+        for (String f : content.animalFaces) if (!used.contains(f)) free.add(f);
+        return rng.pick(free.isEmpty() ? content.animalFaces : free);
     }
 
     public void setConnected(String pid, boolean on, long now) {
@@ -185,7 +168,6 @@ public final class GameEngine {
         if (phase != Phase.LOBBY) throw new GameError("game_in_progress", "Already started");
         if (players.size() < b.i("players.min")) throw new GameError("not_enough_players", "Need at least " + b.i("players.min") + " players");
         if (settings.seed == null) rng = new Rng(now ^ System.nanoTime());
-        for (PlayerState p : players.values()) giveVirtualKey(p);
         if (settings.teams) {
             teamOf = Teams.form(b, rng, new ArrayList<>(players.keySet()), content);
             teamOf.forEach((id, t) -> players.get(id).team = t);
@@ -225,12 +207,17 @@ public final class GameEngine {
     }
 
     private void advance(long now) {
-        RoundMachine.Step s = RoundMachine.next(phase, round, totalRounds(), ledger != null && ledger.bankEmpty());
+        RoundMachine.Step s = RoundMachine.next(phase, round, totalRounds() + b.i("economy.overtimeMaxRounds"), ledger != null && ledger.bankEmpty());
         enter(s.phase(), s.round(), now);
     }
 
     public int totalRounds() {
         return settings.rounds > 0 ? settings.rounds : b.i("rounds.count");
+    }
+
+    /** v2: rounds past the host's count run as overtime until the bank is empty. 0 = regular round. */
+    public int overtime() {
+        return Math.max(0, round - totalRounds());
     }
 
     private void enter(Phase next, int r, long now) {
@@ -250,13 +237,12 @@ public final class GameEngine {
         }
         out.toAll(Json.msg("phase_changed", "phase", next.wire(), "round", round, "rounds", totalRounds(),
                 "roundType", roundType == null ? null : roundType.id(), "banner", roundType == null ? null : roundType.banner(),
-                "endsAt", phaseEndsAt, "now", now));
+                "endsAt", phaseEndsAt, "now", now, "overtime", overtime()));
         switch (next) {
             case BRIEFING -> setupRound(now);
             case PLAY -> startPlay(now);
             case RESULTS -> finishRound(now);
             case BETWEEN -> startBetween(now);
-            case ESCAPE -> startEscape(now);
             case END -> finishGame(now);
             default -> { }
         }
@@ -272,8 +258,6 @@ public final class GameEngine {
             p.roundEarnings = 0;
             p.attempt = null;
             p.nextAssignAt = -1;
-            p.keyStolen = false;
-            p.keyHeldBy = null;
             p.jammedUntil = -1;
             p.activeModifiers = new ArrayList<>(p.pendingModifiers);
             p.pendingModifiers.clear();
@@ -293,7 +277,13 @@ public final class GameEngine {
             List<String> pair = rng.shuffled(ids).subList(0, 2);
             hvh = new HackerVsHacker(pair.get(0), pair.get(1), b.i("hackerVsHacker.uses"));
         }
-        plan = EventScheduler.plan(b, rng, roundType.steal(), b.l("rounds.playMs"));
+        long base = b.ints("payout.byDifficulty").get(difficulty - 1);
+        double jobs = paidJobsPerPlayer > 0 ? Math.max(1.0, paidJobsPerPlayer) : b.d("economy.expectedPaidJobsPerPlayer");
+        int earners = rival != null ? 2 : players.size();
+        payoutScale = Economy.roundScale(ledger.bank, totalRounds() - round + 1, overtime(), earners, base, roundType.payoutMult(),
+                jobs, b.d("economy.scaleMin"), b.d("economy.scaleMax"), b.d("economy.overtimeBoostPerRound"));
+        roundSuccesses = 0;
+        plan = EventScheduler.plan(b, rng, b.l("rounds.playMs"));
         planIdx = 0;
         freezeWarned.clear();
 
@@ -307,13 +297,14 @@ public final class GameEngine {
             }
             out.toPlayer(p.id, Json.msg("round_start", "round", round, "rounds", totalRounds(), "roundType", roundType.id(),
                     "banner", roundType.banner(), "speed", speed, "difficulty", difficulty,
-                    "target", t == null ? null : Json.obj("id", t.id, "name", t.name),
+                    "target", t == null ? null : Json.obj("id", t.id, "name", t.name, "face", t.face),
                     "modifiers", modsWire(p.activeModifiers), "duel", duel, "spectator", spectator,
-                    "hacker", hvh != null && hvh.hacker.equals(p.id), "team", p.team));
+                    "hacker", hvh != null && hvh.hacker.equals(p.id), "team", p.team,
+                    "payoutScale", payoutScale, "overtime", overtime()));
         }
         out.toHosts(Json.msg("narrate", "key", "round_intro", "vars", Json.obj("round", round, "type", roundType.id())));
         log.log(roomId, round, null, "round_start", Json.obj("type", roundType.id(), "speed", speed, "difficulty", difficulty,
-                "bank", ledger.bank, "events", plan.size()));
+                "bank", ledger.bank, "events", plan.size(), "payoutScale", payoutScale));
     }
 
     private void startPlay(long now) {
@@ -330,7 +321,7 @@ public final class GameEngine {
         }
         if (hvh != null) {
             PlayerState h = players.get(hvh.hacker), v = players.get(hvh.victim);
-            out.toPlayer(h.id, Json.msg("hvh_power", "victimId", v.id, "victimName", v.name, "uses", hvh.usesLeft,
+            out.toPlayer(h.id, Json.msg("hvh_power", "victimId", v.id, "victimName", v.name, "victimFace", v.face, "uses", hvh.usesLeft,
                     "scrambleMs", b.l("hackerVsHacker.scrambleMs")));
             out.toAll(Json.msg("hvh_start", "hackerName", h.name, "victimName", v.name));
             out.toHosts(Json.msg("narrate", "key", "hvh", "vars", Json.obj("hacker", h.name, "victim", v.name)));
@@ -339,7 +330,6 @@ public final class GameEngine {
     }
 
     private void endPlay(long now) {
-        if (steal != null) closeSteal(now);
         if (freezeEndsAt >= 0) endFreeze();
         if (raid != null) resolveRaid(now);
         for (PlayerState p : players.values()) {
@@ -349,6 +339,7 @@ public final class GameEngine {
     }
 
     private void finishRound(long now) {
+        if (rival == null && !players.isEmpty()) paidJobsPerPlayer = (double) roundSuccesses / players.size();
         Map<String, Long> earnings = new LinkedHashMap<>();
         for (PlayerState p : players.values()) {
             long e = p.wallet - walletAtRoundStart.getOrDefault(p.id, 0L);
@@ -374,11 +365,6 @@ public final class GameEngine {
                 if (e.getValue() >= 0) p.credit(e.getValue());
                 else p.debit(-e.getValue());
             }
-        }
-        // Keys come home at round end (BE-07).
-        for (PlayerState p : players.values()) {
-            p.keyStolen = false;
-            p.keyHeldBy = null;
         }
         List<Map<String, Object>> table = new ArrayList<>();
         for (PlayerState p : players.values()) {
@@ -411,31 +397,31 @@ public final class GameEngine {
                 log.log(roomId, round, null, "team_swap", Json.obj("a", swap[0], "b", swap[1]));
             }
         }
-        boolean sabotageOpen = round + 1 >= b.i("sabotage.fromRound");
-        out.toAll(Json.msg("between", "nextRound", round + 1, "sabotage", sabotageOpen,
-                "modifiers", sabotageOpen ? b.strings("sabotage.modifiers") : List.of(), "endsAt", phaseEndsAt));
+        for (PlayerState p : players.values()) out.toPlayer(p.id, betweenMsg(p));
+        out.toHosts(betweenMsg(null));
     }
 
-    private void startEscape(long now) {
-        out.toAll(Json.msg("escape_open", "endsAt", phaseEndsAt, "bankEmpty", ledger.bankEmpty()));
-        out.toHosts(Json.msg("narrate", "key", "escape", "vars", Json.obj()));
-        log.log(roomId, round, null, "escape_open", Json.obj("bank", ledger.bank));
+    private Map<String, Object> betweenMsg(PlayerState p) {
+        boolean sabotageOpen = round + 1 >= b.i("sabotage.fromRound");
+        List<String> immune = new ArrayList<>();
+        for (PlayerState x : players.values()) if (Sabotage.immune(x, round)) immune.add(x.id);
+        return Json.msg("between", "nextRound", round + 1, "overtime", Math.max(0, round + 1 - totalRounds()),
+                "sabotage", sabotageOpen && (p == null || !p.sabotageUsed),
+                "modifiers", sabotageOpen ? b.strings("sabotage.modifiers") : List.of(), "immune", immune, "endsAt", phaseEndsAt);
     }
 
     private void finishGame(long now) {
+        // v2: no escape phase. Every wallet is banked automatically.
         for (PlayerState p : players.values()) {
-            if (!p.escaped) {
-                long lost = Economy.loseWallet(ledger, p);
-                if (lost > 0) log.log(roomId, round, p.id, "wallet_lost", Json.obj("amount", lost));
-            }
+            long banked = Economy.bankWallet(p);
+            if (banked > 0) log.log(roomId, round, p.id, "auto_bank", Json.obj("banked", banked, "stash", p.stash));
         }
         List<PlayerState> ranked = Endgame.standings(players.values());
         List<Map<String, Object>> rows = new ArrayList<>();
         for (int i = 0; i < ranked.size(); i++) {
             PlayerState p = ranked.get(i);
-            rows.add(Json.obj("rank", i + 1, "id", p.id, "name", p.name, "stash", p.stash, "lost", p.lostAtEnd,
-                    "escaped", p.escaped, "successes", p.successes, "fails", p.fails, "steals", p.steals,
-                    "stolen", p.stolenAmount, "robbed", p.timesRobbed, "bounties", p.bounties, "team", p.team));
+            rows.add(Json.obj("rank", i + 1, "id", p.id, "name", p.name, "face", p.face, "stash", p.stash,
+                    "successes", p.successes, "fails", p.fails, "bounties", p.bounties, "team", p.team));
         }
         Map<String, Long> teamTotals = new LinkedHashMap<>();
         for (PlayerState p : ranked) if (p.team != null) teamTotals.merge(p.team, p.stash, Long::sum);
@@ -494,8 +480,12 @@ public final class GameEngine {
             p.nextAssignAt = -1;
             return;
         }
-        List<ModifierSpec> mods = now - playStartedAt < b.l("sabotage.activeForFirstMs") ? p.activeModifiers : List.of();
-        p.attempt = new Attempt("a" + (++seq), g.id(), difficulty, speed, seed, now, List.copyOf(mods), duel);
+        // v2: each queued sabotage hits exactly one minigame, and never two minigames in a row.
+        p.prevHit = p.curHit;
+        List<ModifierSpec> mods = !p.prevHit && !p.activeModifiers.isEmpty() ? List.of(p.activeModifiers.remove(0)) : List.of();
+        p.curHit = !mods.isEmpty();
+        if (p.curHit) p.lastHitRound = round;
+        p.attempt = new Attempt("a" + (++seq), g.id(), difficulty, speed, seed, now, mods, duel);
         sendAssign(p);
     }
 
@@ -540,13 +530,14 @@ public final class GameEngine {
         long delta;
         if (success) {
             long base = b.ints("payout.byDifficulty").get(a.difficulty() - 1);
-            long want = Economy.successAmount(base, roundType.payoutMult(), score, tier.payoutMult());
+            long want = Economy.successAmount(base, roundType.payoutMult() * payoutScale, score, tier.payoutMult());
             delta = Economy.payout(ledger, p, want);
             // PR-02: optional calm bonus when the Presage heart-rate module reports the player kept their cool.
             if (msg.path("nerves").path("calm").asBoolean(false) && b.strings("presage.games").contains(a.gameId())) {
                 delta += Economy.payout(ledger, p, b.l("presage.calmBonus"));
             }
             p.successes++;
+            roundSuccesses++;
             p.streak++;
             p.bestStreak = Math.max(p.bestStreak, p.streak);
             out.toHosts(Json.msg("fx", "kind", "success", "playerId", p.id, "name", p.name, "gameId", a.gameId(), "amount", delta));
@@ -617,13 +608,6 @@ public final class GameEngine {
 
     private void openEvent(EventScheduler.Kind kind, long now, long dur) {
         switch (kind) {
-            case STEAL -> {
-                if (steal != null) closeSteal(now);
-                steal = new StealArbiter(now, now + dur);
-                out.toAll(Json.msg("steal_open", "endsAt", now + dur, "now", now));
-                out.toHosts(Json.msg("narrate", "key", "steal", "vars", Json.obj()));
-                log.log(roomId, round, null, "steal_open", Json.obj("ms", dur));
-            }
             case FREEZE -> {
                 freezeStart = now;
                 freezeEndsAt = now + dur;
@@ -650,15 +634,8 @@ public final class GameEngine {
     }
 
     private void closeExpiredWindows(long now) {
-        if (steal != null && now >= steal.closesAt()) closeSteal(now);
         if (freezeEndsAt >= 0 && now >= freezeEndsAt + b.l("freeze.graceMs")) endFreeze();
         if (raid != null && now >= raid.endsAt) resolveRaid(now);
-    }
-
-    private void closeSteal(long now) {
-        out.toAll(Json.msg("steal_closed", "winnerId", steal.winner()));
-        steal = null;
-        dirty = true;
     }
 
     private void endFreeze() {
@@ -685,50 +662,6 @@ public final class GameEngine {
         dirty = true;
     }
 
-    private void onScan(PlayerState p, JsonNode msg, long now) {
-        if (steal == null) {
-            out.toPlayer(p.id, Json.msg("steal_reject", "reason", "no_window"));
-            return;
-        }
-        PlayerState victim = null;
-        String code = Json.str(msg, "code", null);
-        if (code != null) {
-            int n = signer.verify(code);
-            for (PlayerState o : players.values()) if (n > 0 && o.vaultNo == n) victim = o;
-        } else {
-            PlayerState v = players.get(Json.str(msg, "victim", ""));
-            if (v != null && (settings.virtualKeys || v.bot)) victim = v;
-        }
-        StealArbiter.Outcome o = steal.scan(p, victim, now);
-        if (!o.won()) {
-            out.toPlayer(p.id, Json.msg("steal_reject", "reason", o.reject().name().toLowerCase()));
-            return;
-        }
-        long amount = 0;
-        boolean blocked = victim.shield;
-        if (blocked) {
-            victim.shield = false;
-        } else {
-            amount = Economy.transfer(victim, p, Economy.stealAmount(victim.wallet, b.d("steal.pctOfVictimWallet"),
-                    b.l("steal.minAmount"), p.stealBoost));
-            p.stealBoost = 0;
-            if (b.l("steal.thiefBonus") > 0) amount += Economy.payout(ledger, p, b.l("steal.thiefBonus"));
-        }
-        victim.keyStolen = true;
-        victim.keyHeldBy = p.id;
-        p.steals++;
-        p.stolenAmount += amount;
-        victim.timesRobbed++;
-        victim.lostToThieves += amount;
-        out.toAll(Json.msg("steal_result", "thiefId", p.id, "thiefName", p.name, "victimId", victim.id, "victimName", victim.name,
-                "amount", amount, "blocked", blocked));
-        out.toHosts(Json.msg("narrate", "key", blocked ? "steal_blocked" : "steal_success", "vars", Json.obj("thief", p.name, "victim", victim.name)));
-        log.log(roomId, round, p.id, "steal", Json.obj("victim", victim.id, "amount", amount, "blocked", blocked,
-                "wallet", p.wallet, "victimWallet", victim.wallet, "bank", ledger.bank));
-        closeSteal(now);
-        dirty = true;
-    }
-
     private void onFreezeViolation(PlayerState p, long now) {
         if (freezeStart < 0 || now < freezeStart || now > freezeEndsAt + b.l("freeze.graceMs")) return;
         if (!freezeViolators.add(p.id)) return;
@@ -747,15 +680,9 @@ public final class GameEngine {
         PlayerState p = player(pid);
         String t = Json.str(msg, "t", "");
         switch (t) {
-            case "key_claim" -> {
-                if (phase != Phase.LOBBY) throw new GameError("wrong_phase", "Claim keys in the lobby");
-                claimKey(pid, Json.str(msg, "code", ""));
-            }
-            case "key_scan" -> onScan(p, msg, now);
             case "minigame_result" -> onResult(p, msg, now);
             case "freeze_violation" -> onFreezeViolation(p, now);
             case "bankraid_grab" -> onGrab(p, now);
-            case "escape" -> onEscape(p, now);
             case "sabotage" -> onSabotage(p, msg);
             case "hack_scramble" -> onScramble(p, now);
             case "card_play" -> onCardPlay(p, msg, now);
@@ -775,33 +702,25 @@ public final class GameEngine {
         if (raid.full()) resolveRaid(now);
     }
 
-    private void onEscape(PlayerState p, long now) {
-        if (phase != Phase.ESCAPE || now > phaseEndsAt + b.l("escape.lateGraceMs")) throw new GameError("wrong_phase", "Not escape time");
-        if (p.escaped) return;
-        long banked = Economy.bankWallet(p);
-        p.escaped = true;
-        p.escapedAt = now;
-        out.toPlayer(p.id, Json.msg("escape_ack", "banked", banked, "stash", p.stash));
-        out.toHosts(Json.msg("fx", "kind", "escape", "playerId", p.id, "name", p.name, "amount", banked));
-        log.log(roomId, round, p.id, "escape", Json.obj("banked", banked, "stash", p.stash, "wallet", 0));
-        if (players.values().stream().allMatch(x -> x.escaped || !x.connected)) phaseEndsAt = now;
-        dirty = true;
-    }
-
     private void onSabotage(PlayerState p, JsonNode msg) {
         PlayerState target = players.get(Json.str(msg, "targetId", ""));
         String mod = Json.str(msg, "modifier", "");
         ModifierSpec spec = Sabotage.validate(b, phase, round + 1, p, target, mod, players);
         target.pendingModifiers.add(spec);
         p.sabotageUsed = true;
-        out.toPlayer(p.id, Json.msg("sabotage_ack", "targetId", target.id, "targetName", target.name, "modifier", mod));
+        out.toPlayer(p.id, Json.msg("sabotage_ack", "targetId", target.id, "targetName", target.name, "targetFace", target.face, "modifier", mod));
         out.toHosts(Json.msg("fx", "kind", "sabotage", "modifier", mod));
         log.log(roomId, round, p.id, "sabotage", Json.obj("target", target.id, "modifier", mod));
     }
 
     private void onScramble(PlayerState p, long now) {
-        if (phase != Phase.PLAY || hvh == null || !hvh.use(p.id)) throw new GameError("no_power", "You have no scrambles");
+        if (phase != Phase.PLAY || hvh == null || hvh.usesLeft <= 0 || !hvh.hacker.equals(p.id)) throw new GameError("no_power", "You have no scrambles");
         PlayerState v = players.get(hvh.victim);
+        // v2: never two of the victim's minigames in a row.
+        if (v.prevHit) throw new GameError("victim_cooldown", v.name + " was just hit. Wait for their next job");
+        if (!hvh.use(p.id)) throw new GameError("no_power", "You have no scrambles");
+        v.curHit = true;
+        v.lastHitRound = round;
         long ms = b.l("hackerVsHacker.scrambleMs");
         v.jammedUntil = now + ms;
         out.toPlayer(v.id, Json.msg("modifier_apply", "id", "jam-the-signal", "durationMs", ms, "strength", b.d("hackerVsHacker.scrambleStrength")));
@@ -861,7 +780,6 @@ public final class GameEngine {
     public void admin(JsonNode msg, long now) {
         String action = Json.str(msg, "action", "");
         switch (action) {
-            case "force_steal" -> forceEvent(EventScheduler.Kind.STEAL, now);
             case "force_freeze" -> forceEvent(EventScheduler.Kind.FREEZE, now);
             case "force_bankraid" -> forceEvent(EventScheduler.Kind.BANKRAID, now);
             case "skip_round" -> {
@@ -923,7 +841,6 @@ public final class GameEngine {
     }
 
     private Map<String, Object> activeEvent(long now) {
-        if (steal != null && steal.isOpen(now)) return Json.obj("type", "steal", "endsAt", steal.closesAt());
         if (freezeEndsAt >= 0) return Json.obj("type", "freeze", "endsAt", freezeEndsAt);
         if (raid != null) return Json.obj("type", "bankraid", "endsAt", raid.endsAt);
         return null;
@@ -933,11 +850,10 @@ public final class GameEngine {
     public Map<String, Object> publicState(long now) {
         List<Map<String, Object>> ps = new ArrayList<>();
         for (PlayerState p : players.values()) {
-            ps.add(Json.obj("id", p.id, "name", p.name, "wallet", p.wallet, "stash", p.stash, "on", p.connected ? 1 : 0,
-                    "key", p.keyCode == null ? "none" : p.keyStolen ? "stolen" : "held", "vault", p.vaultNo,
-                    "team", p.team, "esc", p.escaped ? 1 : null, "bot", p.bot ? 1 : null));
+            ps.add(Json.obj("id", p.id, "name", p.name, "face", p.face, "wallet", p.wallet, "stash", p.stash, "on", p.connected ? 1 : 0,
+                    "team", p.team, "bot", p.bot ? 1 : null));
         }
-        return Json.msg("state", "room", roomId, "phase", phase.wire(), "round", round, "rounds", totalRounds(),
+        return Json.msg("state", "room", roomId, "phase", phase.wire(), "round", round, "rounds", totalRounds(), "overtime", overtime(),
                 "roundType", roundType == null ? null : roundType.id(), "endsAt", phaseEndsAt, "now", now,
                 "bank", ledger == null ? null : ledger.bank, "bankStart", ledger == null ? null : ledger.bankStart,
                 "speed", speed, "event", activeEvent(now), "players", ps);
@@ -958,8 +874,8 @@ public final class GameEngine {
 
     private Map<String, Object> meWire(PlayerState p) {
         PlayerState t = p.target == null ? null : players.get(p.target);
-        return Json.obj("id", p.id, "vaultName", p.vaultName, "target", t == null ? null : Json.obj("id", t.id, "name", t.name),
-                "shield", p.shield ? 1 : null, "boost", p.stealBoost > 0 ? p.stealBoost : null, "team", p.team);
+        return Json.obj("id", p.id, "face", p.face, "target", t == null ? null : Json.obj("id", t.id, "name", t.name, "face", t.face),
+                "team", p.team);
     }
 
     /** Re-send everything a reconnecting phone needs to land back in the current phase (BE-02). */
@@ -969,12 +885,10 @@ public final class GameEngine {
         m.put("me", meWire(p));
         out.toPlayer(pid, Json.msg("phase_changed", "phase", phase.wire(), "round", round, "rounds", totalRounds(),
                 "roundType", roundType == null ? null : roundType.id(), "banner", roundType == null ? null : roundType.banner(),
-                "endsAt", phaseEndsAt, "now", now, "resync", true));
+                "endsAt", phaseEndsAt, "now", now, "overtime", overtime(), "resync", true));
         out.toPlayer(pid, m);
         if (phase == Phase.BETWEEN) {
-            boolean sabotageOpen = round + 1 >= b.i("sabotage.fromRound");
-            out.toPlayer(pid, Json.msg("between", "nextRound", round + 1, "sabotage", sabotageOpen && !p.sabotageUsed,
-                    "modifiers", sabotageOpen ? b.strings("sabotage.modifiers") : List.of(), "endsAt", phaseEndsAt));
+            out.toPlayer(pid, betweenMsg(p));
             for (Cards.Vote v : votes.values()) {
                 PlayerState owner = players.get(v.playerId);
                 out.toPlayer(pid, Json.msg("card_vote_open", "voteId", v.id, "playerId", v.playerId, "playerName", owner == null ? "?" : owner.name,
@@ -986,15 +900,13 @@ public final class GameEngine {
         if (phase == Phase.PLAY && p.attempt == null && p.nextAssignAt < 0 && (rival == null || rival.isDuelist(p.id)) && (rival == null || rival.winner == null)) {
             p.nextAssignAt = now;
         }
-        if (steal != null && steal.isOpen(now)) out.toPlayer(pid, Json.msg("steal_open", "endsAt", steal.closesAt(), "now", now));
         if (freezeEndsAt >= 0) out.toPlayer(pid, Json.msg("freeze_start", "endsAt", freezeEndsAt, "now", now));
         if (raid != null) out.toPlayer(pid, Json.msg("bankraid_open", "endsAt", raid.endsAt, "now", now, "winners", raid.maxWinners));
         if (hvh != null && hvh.hacker.equals(pid) && phase == Phase.PLAY) {
             PlayerState v = players.get(hvh.victim);
-            out.toPlayer(pid, Json.msg("hvh_power", "victimId", v.id, "victimName", v.name, "uses", hvh.usesLeft,
+            out.toPlayer(pid, Json.msg("hvh_power", "victimId", v.id, "victimName", v.name, "victimFace", v.face, "uses", hvh.usesLeft,
                     "scrambleMs", b.l("hackerVsHacker.scrambleMs")));
         }
-        if (phase == Phase.ESCAPE && !p.escaped) out.toPlayer(pid, Json.msg("escape_open", "endsAt", phaseEndsAt));
         if (phase == Phase.END && finalStandings != null) out.toPlayer(pid, finalStandings);
     }
 
@@ -1002,7 +914,7 @@ public final class GameEngine {
     public void resyncHost(java.util.function.Consumer<Map<String, Object>> send, long now) {
         send.accept(Json.msg("phase_changed", "phase", phase.wire(), "round", round, "rounds", totalRounds(),
                 "roundType", roundType == null ? null : roundType.id(), "banner", roundType == null ? null : roundType.banner(),
-                "endsAt", phaseEndsAt, "now", now, "resync", true));
+                "endsAt", phaseEndsAt, "now", now, "overtime", overtime(), "resync", true));
         send.accept(publicState(now));
         if (phase == Phase.END && finalStandings != null) send.accept(finalStandings);
     }
@@ -1078,8 +990,8 @@ public final class GameEngine {
         return votes;
     }
 
-    public boolean stealOpen(long now) {
-        return steal != null && steal.isOpen(now);
+    public double payoutScale() {
+        return payoutScale;
     }
 
     public void openForTest(EventScheduler.Kind k, long now) {

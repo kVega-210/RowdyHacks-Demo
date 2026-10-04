@@ -1,4 +1,4 @@
-// MG-07 Encryption Breaker, v2: centred and bigger. Wrong letters reveal the right one; a clean decode rains Matrix code.
+// MG-07 Encryption Breaker, v2: centred and bigger, with a static cipher key (no rotation). Wrong letters reveal the right one; a clean decode rains Matrix code.
 import { game, h, css, byD, SYMBOLS } from '../fx/kit.js';
 
 export const meta = { id: 'encryption-breaker', name: 'Encryption Breaker', tags: ['cyber'], baseDurationMs: 12000 };
@@ -46,17 +46,9 @@ export function mount(container, opts) {
     });
     optsBox.replaceChildren(...optButtons);
   };
+  // The cipher key and the symbol word stay static for the whole round; difficulty scales via key size and word length.
   drawKey();
   drawOpts();
-  if (g.d >= 2) {
-    g.every(byD(g, 0, 5000, 3500), () => {
-      const vals = g.r.shuffle(Object.values(map));
-      map = Object.fromEntries(syms.map((s, k) => [s, vals[k]]));
-      drawKey();
-      drawOpts();
-      g.status('CIPHER ROTATED', '#ff9f43');
-    });
-  }
   g.stage.append(h('div', { class: 'eb-wrap' }, keyBox, h('div', { class: 'eb-word' }, cells), optsBox));
   return g.handle();
 }

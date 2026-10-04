@@ -56,7 +56,7 @@ while (Date.now() - t0 < 6 * 60 * 1000) {
   }
   // Play like a (very bad) human: tap random visible buttons in the game box / overlays / escape.
   await phone.evaluate(() => {
-    const pool = [...document.querySelectorAll('#game button, #overlay button, .escape-btn, .ov .grab')].filter((b) => b.offsetParent);
+    const pool = [...document.querySelectorAll('#game button, #overlay button')].filter((b) => b.offsetParent);
     const b = pool[Math.floor(Math.random() * pool.length)];
     if (b) {
       const r = b.getBoundingClientRect();
@@ -76,7 +76,7 @@ const term = async (pg) => pg.evaluate(() => { const t = document.querySelector(
 const terms = { phone: await term(phone), host: await term(host) };
 await browser.close();
 console.log({ phases: [...seen], taps, result, hostFinal, v2, terms, errors });
-const ok = result.final && hostFinal && errors.length === 0 && ['lobby', 'briefing', 'play', 'results', 'end'].every((p) => seen.has(p))
+const ok = result.final && hostFinal && errors.length === 0 && ['briefing', 'play', 'results', 'end'].every((p) => seen.has(p))
   && terms.phone.lines > 5 && terms.host.lines > 5 && terms.phone.scroll && terms.host.scroll;
 console.log(ok ? 'E2E PASS' : 'E2E FAIL');
 process.exit(ok ? 0 : 1);

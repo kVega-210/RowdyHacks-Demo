@@ -44,6 +44,6 @@ export function mount(container, opts) {
     if (num) byNum.set(num, b);
     grid.append(b);
   }
-  g.stage.append(h('div', { class: 'fb-wrap' }, grid, h('div', { class: 'fb-label' }, 'Order!')));
+  g.stage.append(h('div', { class: 'fb-wrap' }, grid, h('div', { class: 'fb-label' }, 'ORDER!')));
   return g.handle();
 }

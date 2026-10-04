@@ -6,7 +6,8 @@ import java.util.Map;
 
 /**
  * BE-11: one Sabotage per player per round, chosen between rounds (target + modifier). Validated here and
- * queued on the target; GameEngine injects it into the target's next round_start and early minigame_assigns.
+ * queued on the target. v2: each queued sabotage hits exactly one minigame, never two of a player's
+ * minigames in a row, and a player hit last round cannot be targeted in the next break.
  */
 public final class Sabotage {
     private Sabotage() {}
@@ -18,7 +19,13 @@ public final class Sabotage {
         if (from.sabotageUsed) throw new GameError("sabotage_used", "One sabotage per round");
         if (target == null || !players.containsKey(target.id)) throw new GameError("bad_target", "Unknown target");
         if (target.id.equals(from.id)) throw new GameError("bad_target", "You cannot sabotage yourself");
+        if (immune(target, nextRound - 1)) throw new GameError("target_cooldown", target.name + " was just hit. Pick someone else");
         if (!b.strings("sabotage.modifiers").contains(modifier)) throw new GameError("bad_modifier", "Unknown modifier");
         return new ModifierSpec(modifier, b.l("sabotage.durationMs"), b.d("sabotage.strength"), from.id);
+    }
+
+    /** v2: a player who was hit during the round just played cannot be picked again right away. */
+    public static boolean immune(PlayerState target, int roundJustPlayed) {
+        return roundJustPlayed > 0 && target.lastHitRound == roundJustPlayed;
     }
 }

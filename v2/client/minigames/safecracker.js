@@ -12,16 +12,17 @@ css('mg-safecracker', `
 .sc-face i{position:absolute;left:50%;top:4px;width:2px;height:10px;background:#cfd6e6;transform-origin:50% calc(min(62vw,230px)/2 - 10px)}
 .sc-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:900 44px ui-monospace,monospace;color:#ffd84d}
 .sc-mark{position:absolute;left:50%;top:-14px;margin-left:-8px;border:8px solid transparent;border-top:12px solid #ff5c7a}
+.sc-label{text-align:center;font:900 24px system-ui,sans-serif;letter-spacing:.12em;color:#ff5c7a;margin:8px 0 2px;text-shadow:0 0 10px #ff224466}
 .sc-stop{display:block;margin:6px auto 0;width:80%;height:64px;font-size:26px}
 `);
 
 export function mount(container, opts) {
   const g = game(container, opts, { id: meta.id, title: meta.name, hint: 'STOP the dial on each number', timeMs: 13000 });
   const N = 40;
-  const tol = byD(g, 2, 1, 1);
+  const tol = 2; // v2: stopping within 2 numbers of the target counts at every difficulty
   const combo = [g.r.range(5, 35), g.r.range(5, 35), g.r.range(5, 35)];
   let step = 0, angle = g.r.float(0, N), dir = 1, retries = byD(g, 1, 0, 0);
-  const rate = byD(g, 9, 11, 13);
+  const rate = byD(g, 7.5, 9, 11); // numbers per second (v2: ~17% slower than 9/11/13)
   const face = h('div', { class: 'sc-face' });
   for (let i = 0; i < N; i += 2) face.append(h('i', { style: { transform: `rotate(${(i / N) * 360}deg)` } }));
   const num = h('div', { class: 'sc-num' });
@@ -46,6 +47,7 @@ export function mount(container, opts) {
       g.penalize(1200);
     } else g.lose('alarm triggered');
   }, 'bad sc-stop');
-  g.stage.append(h('div', { class: 'sc-combo' }, chips), h('div', { class: 'sc-dial' }, face, num, h('div', { class: 'sc-mark' })), stop);
+  g.stage.append(h('div', { class: 'sc-combo' }, chips), h('div', { class: 'sc-dial' }, face, num, h('div', { class: 'sc-mark' })),
+    h('div', { class: 'sc-label' }, 'UNLOCK!'), stop);
   return g.handle();
 }

@@ -11,7 +11,7 @@ css('mg-ff', `
 `);
 
 export function mount(container, opts) {
-  const g = game(container, opts, { id: meta.id, title: meta.name, hint: 'STOP inside the green. It shrinks!', timeMs: 10000 });
+  const g = game(container, opts, { id: meta.id, title: meta.name, hint: 'DISARM inside the green. It shrinks!', timeMs: 10000 });
   const zone = h('div', { class: 'ff-zone' });
   const cur = h('div', { class: 'ff-cur' });
   const center = g.r.float(0.3, 0.7);
@@ -26,7 +26,7 @@ export function mount(container, opts) {
     zone.style.width = w * 100 + '%';
     cur.style.left = x * 100 + '%';
   });
-  const stop = g.btn('STOP', () => (Math.abs(x - center) <= w / 2 ? g.win() : g.lose('firewall slammed shut')), 'bad ff-stop');
+  const stop = g.btn('DISARM!', () => (Math.abs(x - center) <= w / 2 ? g.win() : g.lose('firewall slammed shut')), 'bad ff-stop');
   g.stage.append(h('div', { class: 'ff-bar' }, zone, cur), stop);
   return g.handle();
 }

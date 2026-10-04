@@ -8,14 +8,14 @@ import java.util.Comparator;
 import java.util.List;
 
 /**
- * BE-06: plan the Steal / Freeze (and BE-13 Bank Raid) windows. v2: at most one Freeze per round, preceded by a warning; for one round, ahead of time and from the
- * seeded RNG. Guarantees: none starts before noneInFirstMs, every window ends before the last
+ * BE-06: plan the Freeze (and BE-13 Bank Raid) windows for one round, ahead of time and from the seeded RNG.
+ * v2: no Steal windows; at most one Freeze per round, always preceded by a warning. Guarantees: none starts before noneInFirstMs, every window ends before the last
  * noneInLastMs of play, and there is at least minGapMs between one window ending and the next starting.
  */
 public final class EventScheduler {
     private EventScheduler() {}
 
-    public enum Kind { STEAL, FREEZE, BANKRAID }
+    public enum Kind { FREEZE, BANKRAID }
 
     public record Scheduled(Kind kind, long atMs, long durationMs) {
         public long endMs() {
@@ -25,19 +25,13 @@ public final class EventScheduler {
 
     public static long duration(Balance b, Kind k) {
         return switch (k) {
-            case STEAL -> b.l("steal.windowMs");
             case FREEZE -> b.l("freeze.windowMs");
             case BANKRAID -> b.l("bankRaid.windowMs");
         };
     }
 
-    public static List<Scheduled> plan(Balance b, Rng rng, boolean stealAllowed, long playMs) {
+    public static List<Scheduled> plan(Balance b, Rng rng, long playMs) {
         List<Kind> kinds = new ArrayList<>();
-        if (stealAllowed) {
-            int n = rng.range(b.i("events.stealsPerRoundMin"), b.i("events.stealsPerRoundMax"));
-            for (int i = 0; i < n; i++) kinds.add(Kind.STEAL);
-        }
-        // v2: freezes are rarer (at most one per round) and always announced by a warning first.
         if (rng.chance(b.d("freeze.chancePerRound"))) kinds.add(Kind.FREEZE);
         if (rng.chance(b.d("bankRaid.chancePerRound"))) kinds.add(Kind.BANKRAID);
         kinds = rng.shuffled(kinds);

@@ -16,7 +16,7 @@ button { font: inherit; touch-action: manipulation; }
 input { font: inherit; font-size: 20px; user-select: text; -webkit-user-select: text; }
 
 /* HUD (CL-04) */
-#hud { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 6px; padding: 8px 10px 6px; background: #0b1120; border-bottom: 2px solid var(--line); z-index: 10; }
+#hud { display: grid; grid-template-columns: 1.2fr .8fr 1.4fr; gap: 6px; padding: 8px 10px 6px; background: #0b1120; border-bottom: 2px solid var(--line); z-index: 10; }
 #hud .cell { background: var(--panel); border-radius: 10px; padding: 4px 8px; text-align: center; min-width: 0; }
 #hud .cell small { display: block; font-size: 10px; letter-spacing: .1em; color: var(--dim); text-transform: uppercase; }
 #hud .cell b { font-size: 18px; white-space: nowrap; }
@@ -25,7 +25,7 @@ input { font: inherit; font-size: 20px; user-select: text; -webkit-user-select: 
 #hud .bank .meter { flex: 1; height: 10px; border-radius: 5px; background: #1e2840; overflow: hidden; }
 #hud .bank .meter i { display: block; height: 100%; background: linear-gradient(90deg, var(--red), var(--gold) 40%, var(--green)); transition: width .4s; }
 #hud .clock { font: 800 16px ui-monospace, monospace; min-width: 52px; text-align: right; }
-#hud .key.stolen b { color: var(--red); }
+#hud .me b.face { font-size: 22px; line-height: 1; }
 #hud .target { border: 0; color: inherit; background: var(--panel); border-radius: 10px; }
 #hud .target.revealed { background: #3a1220; }
 

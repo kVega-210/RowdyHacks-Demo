@@ -1,9 +1,10 @@
 package heist.game;
 
 /**
- * BE-05 money rules as pure functions over a Ledger. The bank only ever shrinks: payouts come out of it
- * and penalties are burned (not returned), so the game always trends to an end.
- * Invariant: bankStart == bank + sum(wallets) + sum(stashes) + burned.
+ * BE-05 money rules as pure functions over a Ledger. v2: payouts come out of the bank and penalties go back
+ * into it; the game ends when the bank is empty. Round payouts are scaled so the bank drains over the
+ * host's chosen number of rounds (see {@link #roundScale}).
+ * Invariant: bankStart == bank + sum(wallets) + sum(stashes) + burned (burned = cash of kicked players).
  */
 public final class Economy {
     private Economy() {}
@@ -32,34 +33,18 @@ public final class Economy {
         return paid;
     }
 
-    /** Take a penalty from the wallet (never below zero) and burn it. Returns the amount taken. */
+    /** Take a penalty from the wallet (never below zero) and return it to the bank. Returns the amount taken. */
     public static long penalty(Ledger l, PlayerState p, long amount) {
         long taken = p.debit(amount);
-        l.burned += taken;
+        l.bank += taken;
         return taken;
     }
 
-    /** Move wallet cash from one player to another (steals). Returns the amount moved. */
-    public static long transfer(PlayerState from, PlayerState to, long amount) {
-        long moved = from.debit(amount);
-        to.credit(moved);
-        return moved;
-    }
-
-    /** Escape: wallet moves to the safe stash. */
+    /** End of game: the wallet is banked into the stash automatically. */
     public static long bankWallet(PlayerState p) {
         long w = p.wallet;
         p.stash += w;
         p.wallet = 0;
-        return w;
-    }
-
-    /** End of game: unbanked wallet is lost. */
-    public static long loseWallet(Ledger l, PlayerState p) {
-        long w = p.wallet;
-        p.wallet = 0;
-        p.lostAtEnd = w;
-        l.burned += w;
         return w;
     }
 
@@ -68,8 +53,18 @@ public final class Economy {
         return Math.round(base * roundMult * scoreMult * wagerMult);
     }
 
-    public static long stealAmount(long victimWallet, double pct, long min, double boost) {
-        long want = Math.max(min, Math.round(victimWallet * (pct + boost)));
-        return Math.min(want, victimWallet);
+    /**
+     * v2 payout scale for one round: this round's share of the bank (bank / rounds left, the whole bank in
+     * overtime) divided by what the crew would earn unscaled. Overtime rounds pay out harder each time so
+     * the bank always empties. Clamped to [scaleMin, scaleMax], except in overtime where the max is lifted.
+     */
+    public static double roundScale(long bank, int roundsLeft, int overtime, int players, long basePayout, double roundMult,
+                                    double expectedPaidJobs, double scaleMin, double scaleMax, double overtimeBoost) {
+        double expected = Math.max(1, players) * expectedPaidJobs * basePayout * roundMult;
+        if (expected <= 0) return 1.0;
+        double share = (double) bank / Math.max(1, roundsLeft);
+        double s = share / expected;
+        if (overtime > 0) return Math.round(Math.max(scaleMin, s * (1 + overtimeBoost * overtime)) * 100) / 100.0;
+        return Math.round(Math.max(scaleMin, Math.min(scaleMax, s)) * 100) / 100.0;
     }
 }

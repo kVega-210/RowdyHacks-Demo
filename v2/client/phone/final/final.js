@@ -1,25 +1,6 @@
-// CL-08 escape button and final results (stash reveal, podium, Gemini roast slot).
-import { h, money, view, countdown } from '../ui.js';
+// CL-08 final results (stash reveal, podium, Gemini roast slot). v2: no escape button; wallets are banked automatically.
+import { h, money, view } from '../ui.js';
 import { sfx } from '../../fx/sfx.js';
-
-export function escape(ctx) {
-  const s = ctx.store;
-  if (s.escaped) {
-    view(h('div', { class: 'wait' }, h('b', {}, '🚐 You got out!'), `Stashed ${money(s.escaped.stash)}. Waiting for the others...`));
-    return;
-  }
-  const btn = h('button', { class: 'escape-btn', type: 'button' }, 'ESCAPE!');
-  btn.addEventListener('pointerdown', (e) => { e.preventDefault(); btn.disabled = true; btn.textContent = '...'; ctx.send({ t: 'escape' }); });
-  view(h('div', { class: 'banner', style: { color: 'var(--red)' } }, '🚨 THE ALARM IS RINGING 🚨'),
-    h('p', { class: 'center' }, 'Tap ESCAPE to move your wallet into your stash. Anything left in your wallet is lost!'),
-    btn, s.state && s.state.endsAt > 0 ? countdown(ctx.sock, s.state.endsAt) : null);
-}
-
-export function escaped(ctx, msg) {
-  sfx.play('escape');
-  ctx.store.escaped = msg;
-  escape(ctx);
-}
 
 export function standings(ctx) {
   const s = ctx.store;
@@ -32,11 +13,11 @@ export function standings(ctx) {
   view(
     h('div', { class: 'banner' }, f.winnerId === s.playerId ? '👑 YOU WIN! 👑' : `${f.winnerName} wins!`),
     me ? h('div', { class: 'card center' }, h('div', { class: 'muted' }, 'Your stash'), h('div', { class: 'payout' }, money(me.stash)),
-      me.lost ? h('div', { style: { color: 'var(--red)' } }, `Left behind: ${money(me.lost)}`) : null, h('div', {}, `#${me.rank} of ${rows.length}`)) : null,
-    h('div', { class: 'podium' }, top.map((r, i) => (r ? h('div', { class: ['p2', 'p1', 'p3'][i] }, h('div', {}, ['🥈', '🥇', '🥉'][i]), r.name, h('div', {}, money(r.stash))) : h('div', { style: { visibility: 'hidden' } })))),
+      h('div', {}, `#${me.rank} of ${rows.length}`)) : null,
+    h('div', { class: 'podium' }, top.map((r, i) => (r ? h('div', { class: ['p2', 'p1', 'p3'][i] }, h('div', {}, ['🥈', '🥇', '🥉'][i], ' ', r.face || ''), r.name, h('div', {}, money(r.stash))) : h('div', { style: { visibility: 'hidden' } })))),
     f.winningTeam ? h('div', { class: 'card center' }, `Winning crew: ${f.winningTeam}`) : null,
     h('div', { class: 'card' }, h('ul', { class: 'roster' }, rows.map((r) => h('li', { class: r.id === s.playerId ? 'me' : '' },
-      h('span', {}, `#${r.rank} ${r.name}`), h('span', {}, `${money(r.stash)}${r.escaped ? '' : ' (caught)'}`))))),
+      h('span', {}, `#${r.rank} ${r.face || ''} ${r.name}`), h('span', {}, money(r.stash)))))),
     roastBox,
     h('p', { class: 'center' }, h('a', { href: `/replay/?room=${s.room}`, style: { color: 'var(--cyan)' } }, 'Watch the heist replay')),
   );
