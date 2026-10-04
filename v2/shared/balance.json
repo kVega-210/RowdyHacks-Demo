@@ -1,0 +1,78 @@
+{
+  "_doc": "Every number the server (and clients) use lives here. See /docs/balance.md for the rationale. Times are milliseconds of game time.",
+  "players": { "min": 2, "max": 8 },
+  "bank": { "startPerPlayer": 4000, "warnAtFractions": [0.75, 0.5, 0.25] },
+  "rounds": {
+    "count": 6,
+    "briefingMs": 5000,
+    "playMs": 50000,
+    "resultsMs": 6000,
+    "betweenMs": 15000,
+    "escapeMs": 10000
+  },
+  "speed": { "base": 1.0, "perRound": 1.12, "max": 3.0 },
+  "difficulty": { "byRound": [1, 1, 2, 2, 3, 3] },
+  "payout": {
+    "byDifficulty": [100, 200, 300],
+    "maxScoreMultiplier": 3.0,
+    "minScoreMultiplier": 0.25
+  },
+  "fail": { "walletPenalty": 50 },
+  "minigame": {
+    "minSolveMs": 600,
+    "nextAssignDelayMs": 800,
+    "resultLateGraceMs": 1500,
+    "pushLuckFailPenaltyMult": 3.0
+  },
+  "events": {
+    "stealsPerRoundMin": 1,
+    "stealsPerRoundMax": 2,
+    "minGapMs": 8000,
+    "noneInFirstMs": 5000,
+    "noneInLastMs": 3000
+  },
+  "steal": { "windowMs": 6000, "pctOfVictimWallet": 0.25, "minAmount": 100, "thiefBonus": 0 },
+  "freeze": { "windowMs": 4000, "violationPenalty": 150, "graceMs": 300, "chancePerRound": 0.35, "warningMs": 3000 },
+  "bounty": { "bonus": 150 },
+  "roundTypes": {
+    "sequence": ["breakin", "hack", "breakin", "hack", "rival", "breakin"],
+    "breakin": { "steal": true, "payoutMult": 1.0, "tags": ["classic"], "banner": "BREAK-IN: keys are live. Watch your pockets." },
+    "hack": { "steal": false, "payoutMult": 1.25, "tags": ["cyber"], "banner": "HACK ROUND: no stealing, bigger payouts." },
+    "rival": { "steal": false, "payoutMult": 1.0, "tags": ["classic", "cyber"], "banner": "RIVAL HEIST: two crooks, one vault." }
+  },
+  "rival": { "pot": 600, "winnerShare": 0.75, "loserPenalty": 100 },
+  "hackerVsHacker": { "rounds": [4], "scrambleMs": 5000, "scrambleStrength": 0.8, "uses": 2, "bonusPerVictimFail": 100 },
+  "sabotage": {
+    "perPlayerPerRound": 1,
+    "durationMs": 6000,
+    "strength": 0.6,
+    "activeForFirstMs": 20000,
+    "fromRound": 2,
+    "modifiers": ["shrunken-buttons", "screen-jitter", "false-alarm", "jam-the-signal"]
+  },
+  "wager": {
+    "tiers": {
+      "1": { "payoutMult": 1.0, "failPenaltyMult": 1.0 },
+      "2": { "payoutMult": 2.0, "failPenaltyMult": 2.5 },
+      "3": { "payoutMult": 3.5, "failPenaltyMult": 5.0 }
+    }
+  },
+  "bankRaid": { "chancePerRound": 0.35, "windowMs": 5000, "winners": 3, "bonusTotal": 600 },
+  "cards": {
+    "voteMs": 10000,
+    "optOutPenalty": 50,
+    "maxPerPlayerPerBetween": 1,
+    "dare": { "success": 200, "fail": -100 },
+    "workout": { "success": 150, "fail": -50 },
+    "doubleOrNothing": { "tier": "2", "base": 150 },
+    "shield": { "success": 0, "fail": -50 },
+    "stealBoost": { "extraPct": 0.15, "fail": -50 }
+  },
+  "teams": { "size": 2, "swapChance": 0.5 },
+  "escape": { "lateGraceMs": 250 },
+  "net": { "heartbeatMs": 10000, "staleMs": 25000, "reconnectGraceMs": 30000, "maxStateHz": 8, "typicalBudgetBytes": 1024 },
+  "rateLimit": { "intentsPerSecond": 20, "scansPerSecond": 8 },
+  "presage": { "calmBonus": 50, "games": ["safecracker", "lockpick", "digital-lockpick"] },
+  "ai": { "geminiTimeoutMs": 5000, "daresTimeoutMs": 3000, "ttsTimeoutMs": 1500, "roastLinesMin": 4, "roastLinesMax": 6 },
+  "bots": { "successRate": 0.7, "thinkMinMs": 3000, "thinkMaxMs": 9000, "scanChance": 0.5, "freezeViolationChance": 0.15, "escapeChance": 0.9, "disconnectChance": 0.02 }
+}

@@ -1,0 +1,31 @@
+{
+  "vaultNames": [
+    "The Gilded Cage", "Fort Knocks", "The Velvet Box", "Midnight Reserve", "The Copper Crypt", "Glasshouse Vault",
+    "The Iron Pantry", "Diamond Drawer", "The Sleepy Safe", "Lucky Strongroom", "The Marble Mouth", "Vault 13",
+    "The Piggy Fortress", "Platinum Pocket", "The Whisper Room", "Goldfinch Lockup", "The Brass Belly", "Cobalt Chamber",
+    "The Night Deposit", "Grandma's Mattress"
+  ],
+  "aliases": [
+    "Velvet Fox", "Twitchy Nick", "The Accountant", "Lockjaw", "Silent Sal", "Butterfingers", "Dr. Crowbar", "Mona Lisa-Lisa",
+    "Slick Rick Jr.", "The Intern", "Ghost Pepper", "Big Cheese", "Tiny Tony", "Jazz Hands", "The Weasel", "Captain Getaway",
+    "Ms. Fortune", "Ziptie", "Duct Tape Dan", "Penny Pincher"
+  ],
+  "teamNames": ["Night Owls", "Red Herrings", "Smooth Operators", "Cat Burglars"],
+  "roundTitles": {
+    "breakin": ["Smash and Grab", "Back Door Bonanza", "The Lobby Job", "Key Party", "Pocket Patrol", "Late Night Withdrawal"],
+    "hack": ["Ones and Zeros", "Firewall Fiesta", "Mainframe Mayhem", "Packet Panic", "Root Access", "Bit Heist"],
+    "rival": ["One Vault, Two Crooks", "Grudge Match", "The Showdown"]
+  },
+  "bankWarnings": {
+    "75": "The vault is feeling lighter. Three quarters left.",
+    "50": "Half the bank is gone. Somebody call the insurance company.",
+    "25": "Only a quarter left. Start thinking about the exit.",
+    "0": "THE BANK IS EMPTY. Run for the door!"
+  },
+  "eventBanners": {
+    "steal": "STEAL! Scan a rival's key!",
+    "freeze": "FREEZE! Hands off your phone!",
+    "bankraid": "BANK RAID! Grab the cash!",
+    "escape": "ESCAPE! Tap to bank your wallet!"
+  }
+}

@@ -21,6 +21,9 @@ key-signing secret). Without them everything still works with offline fallbacks.
 | `/replay/` | cash-over-time replay of finished games |
 | `/health` | health check |
 
+**v2:** a reworked copy with the terminal, the new effects and redesigned minigames lives in [`v2/`](v2/README.md)
+(`cd v2` then `./run.sh` or `.\run.cmd`, port 7071).
+
 ## Tests and tools
 ```sh
 ./run.sh test                    # 52 JUnit tests incl. a full 6-bot game over real WebSockets (~25s)

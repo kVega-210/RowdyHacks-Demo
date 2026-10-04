@@ -20,3 +20,9 @@ client/host/audio/manifest.json
 *.iml
 .DS_Store
 node_modules/
+
+# v2 copy
+v2/server/target/
+v2/data/
+v2/client/host/audio/lines/
+v2/client/host/audio/manifest.json
