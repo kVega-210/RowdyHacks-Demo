@@ -151,7 +151,7 @@ public final class HeistServer {
             System.out.println("  phones      : " + publicUrl() + "/phone/");
             System.out.println("  sandbox     : " + publicUrl() + "/dev/minigame-sandbox/");
             List<String[]> others = lanCandidates();
-            if (others.size() > 1 && System.getenv("PUBLIC_URL") == null) {
+            if (others.size() > 1 && publicUrl().contains(lanIp())) {
                 System.out.println("  Phones can't connect? Try another address, then set PUBLIC_URL=http://<address>:" + app.port() + " in .env:");
                 for (String[] c : others) System.out.println("    http://" + c[0] + ":" + app.port() + "/phone/   (" + c[1] + ")");
             }
@@ -182,7 +182,8 @@ public final class HeistServer {
 
     String publicUrl() {
         String env = System.getenv("PUBLIC_URL");
-        if (env != null && !env.isBlank()) return env.replaceAll("/$", "");
+        // The .env.example placeholder (".example" domain) is never a real address: ignore it.
+        if (env != null && !env.isBlank() && !env.contains(".example")) return env.replaceAll("/$", "");
         return "http://" + lanIp() + ":" + (app == null ? o.port : app.port());
     }
 
