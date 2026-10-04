@@ -1,0 +1,88 @@
+/* v3 round themes. <html data-theme="classic|cyber"> picks the palette and fonts; /fx/theme.js switches it at each
+   briefing (Break-in / Rival = classic, Hack = cyber). Every page and minigame reads these variables, so a new theme
+   is just another block below. Fonts are bundled in /assets/fonts (SIL Open Font License), so it works offline. */
+
+@font-face { font-family: 'Black Ops One'; font-weight: 400; font-display: swap; src: url(/assets/fonts/black-ops-one-latin-400-normal.woff2) format('woff2'); }
+@font-face { font-family: 'Orbitron'; font-weight: 700; font-display: swap; src: url(/assets/fonts/orbitron-latin-700-normal.woff2) format('woff2'); }
+@font-face { font-family: 'Orbitron'; font-weight: 900; font-display: swap; src: url(/assets/fonts/orbitron-latin-900-normal.woff2) format('woff2'); }
+@font-face { font-family: 'Rajdhani'; font-weight: 500; font-display: swap; src: url(/assets/fonts/rajdhani-latin-500-normal.woff2) format('woff2'); }
+@font-face { font-family: 'Rajdhani'; font-weight: 700; font-display: swap; src: url(/assets/fonts/rajdhani-latin-700-normal.woff2) format('woff2'); }
+@font-face { font-family: 'VT323'; font-weight: 400; font-display: swap; src: url(/assets/fonts/vt323-latin-400-normal.woff2) format('woff2'); }
+
+/* ---------------------------------------------------------------- CLASSIC: black and red, yellow highlights */
+html, html[data-theme="classic"] {
+  --bg: #0a0405; --panel: #1c0a0c; --panel2: #120607; --line: #4f171d; --ink: #fff1e2; --dim: #cfa59c;
+  --gold: #ffcc1a; --gold-dark: #a07800; --cyan: #ff3a3a; --cyan-dark: #8f1515; --on-accent: #160405;
+  --label: #ffcc1a; --label-glow: rgba(255, 60, 40, .75);
+  --title: #ffcc1a; --btn-good: #ffcc1a; --btn-good-dark: #a07800;
+  --term: #ffc23a; --term-dim: #c08a14; --term-bg: #0d0602; --term-head: #2b1604; --term-edge: #8a5a00; --term-glow: rgba(255, 180, 40, .5);
+  /* round background: these colours at the start of a round, blending to alarm red as the clock runs out */
+  --h0t-r: 52; --h0t-g: 8; --h0t-b: 12; --h0b-r: 10; --h0b-g: 3; --h0b-b: 4;
+  --h1t-r: 230; --h1t-g: 12; --h1t-b: 18; --h1b-r: 135; --h1b-g: 4; --h1b-b: 6;   /* -> alarm red */
+  --font-display: 'Black Ops One', 'Impact', 'Arial Black', system-ui, sans-serif;
+  --font-body: 'Rajdhani', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'VT323', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  --display-spacing: .06em;
+}
+
+/* ---------------------------------------------------------------- CYBER: terminal / Matrix green */
+html[data-theme="cyber"] {
+  --bg: #010a04; --panel: #05200f; --panel2: #021309; --line: #0f5a2c; --ink: #d9ffe7; --dim: #6fc890;
+  --gold: #39ff88; --gold-dark: #138a45; --cyan: #00ffc8; --cyan-dark: #00886b; --on-accent: #00130a;
+  --label: #39ff88; --label-glow: rgba(0, 255, 110, .7);
+  --title: #39ff88; --btn-good: #39ff88; --btn-good-dark: #138a45;
+  --term: #39ff7a; --term-dim: #2fbf62; --term-bg: #020c05; --term-head: #0a2a14; --term-edge: #1f8f45; --term-glow: rgba(57, 255, 122, .55);
+  --h0t-r: 6; --h0t-g: 46; --h0t-b: 20; --h0b-r: 1; --h0b-g: 10; --h0b-b: 4;
+  --h1t-r: 40; --h1t-g: 230; --h1t-b: 90; --h1b-r: 0; --h1b-g: 95; --h1b-b: 35;   /* -> radioactive green */
+  --font-display: 'Orbitron', 'Eurostile', 'Arial Black', system-ui, sans-serif;
+  --font-body: 'Rajdhani', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'VT323', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  --display-spacing: .08em;
+}
+
+/* Heat: each theme's start colour (h0) blends to its "time's running out" colour (h1) as the round clock runs down
+   (--heat 0..1 is set by fx/screen.js). */
+html {
+  --heat-top: rgb(calc(var(--h0t-r) + (var(--h1t-r) - var(--h0t-r)) * var(--heat, 0)) calc(var(--h0t-g) + (var(--h1t-g) - var(--h0t-g)) * var(--heat, 0)) calc(var(--h0t-b) + (var(--h1t-b) - var(--h0t-b)) * var(--heat, 0)));
+  --heat-bot: rgb(calc(var(--h0b-r) + (var(--h1b-r) - var(--h0b-r)) * var(--heat, 0)) calc(var(--h0b-g) + (var(--h1b-g) - var(--h0b-g)) * var(--heat, 0)) calc(var(--h0b-b) + (var(--h1b-b) - var(--h0b-b)) * var(--heat, 0)));
+}
+
+/* ---------------------------------------------------------------- stylised type */
+body { font-family: var(--font-body); }
+h1, h2, .banner, .big-btn, .countdown, .logo, #roundInfo, #timer, .join-card .code, .podium, .payout,
+.hh-title, .hh-btn, .hh-big, .hh-label, .hh-stake, .choice b, .sab h2, .sab-mod, .ov h1, .ov .timer,
+#banner .b, .center-stage h1, .center-stage h2, .center-stage .big, .awards b, .board .head, .rival .vs, .rival .side-card,
+#hud .cell b, #hud .cell small, #hud .clock, .chip, .btn {
+  font-family: var(--font-display);
+  letter-spacing: var(--display-spacing);
+}
+h1, .hh-title, .center-stage h1, .logo { color: var(--title); }
+.hh-game { font-family: var(--font-body); font-weight: 500; }
+.hh-hint { font-weight: 700; letter-spacing: .02em; }
+
+/* Every minigame's action word (HACK!, ESCAPE!, UNLOCK!, ...) */
+.hh-game .hh-label {
+  color: var(--label); text-transform: uppercase; letter-spacing: .14em;
+  text-shadow: 0 0 10px var(--label-glow), 0 2px 0 #000;
+}
+html[data-theme="cyber"] .hh-game .hh-label { text-shadow: 0 0 12px var(--label-glow), 0 0 2px #00ff88; }
+html[data-theme="classic"] .hh-game .hh-label, html:not([data-theme]) .hh-game .hh-label { -webkit-text-stroke: 1px rgba(160, 0, 0, .9); }
+
+/* Terminal follows the theme: amber phosphor for classic, green for cyber. */
+.hh-term { font-size: 19px !important; line-height: 1.08 !important; background: var(--term-bg) !important; color: var(--term) !important; border-top-color: var(--term-edge) !important;
+  font-family: var(--font-mono) !important; text-shadow: 0 0 6px var(--term-glow) !important; }
+.hh-term-head { background: var(--term-head) !important; border-bottom-color: var(--term-edge) !important; color: var(--term) !important; font-family: var(--font-display) !important; }
+.hh-term-line .ts, .hh-term-line.dim { color: var(--term-dim) !important; }
+.hh-term-line.good { color: var(--green) !important; }
+.hh-term-cursor { background: var(--term) !important; }
+
+/* v3 final screen: the "NAME WINS!" title glows on and off (a quick double flare, then a dim pause). */
+.winner-glow { animation: winnerGlow 2.4s ease-in-out infinite; }
+@keyframes winnerGlow {
+  0%, 100% { text-shadow: 0 6px 0 #000; filter: brightness(1); }
+  12% { text-shadow: 0 6px 0 #000, 0 0 18px var(--title), 0 0 42px var(--title), 0 0 80px var(--label-glow); filter: brightness(1.35); }
+  22% { text-shadow: 0 6px 0 #000, 0 0 6px var(--title); filter: brightness(1.05); }
+  32% { text-shadow: 0 6px 0 #000, 0 0 22px var(--title), 0 0 54px var(--title), 0 0 100px var(--label-glow); filter: brightness(1.45); }
+  50% { text-shadow: 0 6px 0 #000, 0 0 4px var(--title); filter: brightness(1); }
+}
+@media (prefers-reduced-motion: reduce) { .winner-glow { animation: none; text-shadow: 0 6px 0 #000, 0 0 18px var(--title); } }

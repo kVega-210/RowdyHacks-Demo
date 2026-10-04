@@ -1,0 +1,9 @@
+{
+  "id": "clean-getaway",
+  "name": "Clean Getaway",
+  "prompt": "Take the normal route, or floor it through the shortcut?",
+  "options": [
+    { "tier": "1", "label": "Normal Route", "blurb": "Guaranteed cash at normal speed.", "risk": "safe" },
+    { "tier": "2", "label": "The Shortcut", "blurb": "Everything runs much faster. Big bonus if you make it.", "risk": "risky" }
+  ]
+}

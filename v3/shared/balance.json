@@ -1,0 +1,88 @@
+{
+  "_doc": "Every number the server (and clients) use lives here. See /docs/balance.md for the rationale. Times are milliseconds of game time.",
+  "players": { "min": 2, "max": 30 },
+  "bank": {
+    "_doc": "v3: the vault grows faster than the crew: bank = startPerPlayer x players^crewExponent. Because each round pays out ~bank / rounds left spread over the crew, an exponent above 1 also raises the cash per completed job as the crew grows (about +7% at 2 players, +40% at 30 for 1.1).",
+    "startPerPlayer": 4000, "crewExponent": 1.1, "warnAtFractions": [0.75, 0.5, 0.25]
+  },
+  "rounds": {
+    "count": 6,
+    "briefingMs": 5000,
+    "playMs": 50000,
+    "resultsMs": 6000,
+    "betweenMs": 15000
+  },
+  "speed": { "base": 1.0, "perRound": 1.12, "max": 3.0 },
+  "difficulty": { "byRound": [1, 1, 2, 2, 3, 3] },
+  "payout": {
+    "byDifficulty": [100, 200, 300],
+    "maxScoreMultiplier": 3.0,
+    "minScoreMultiplier": 0.25
+  },
+  "fail": { "walletPenalty": 50 },
+  "economy": {
+    "_doc": "v2: the bank is paid out over the host's chosen rounds. Each round's payouts are scaled so the round's share (bank / rounds left) is roughly disbursed. Penalties go back into the bank. If cash is left after the last round, overtime rounds (each paying out harder) run until the bank is empty.",
+    "expectedPaidJobsPerPlayer": 3,
+    "scaleMin": 0.5,
+    "scaleMax": 8,
+    "overtimeBoostPerRound": 0.75,
+    "overtimeMaxRounds": 6
+  },
+  "minigame": {
+    "minSolveMs": 600,
+    "nextAssignDelayMs": 800,
+    "resultLateGraceMs": 1500,
+    "pushLuckFailPenaltyMult": 3.0
+  },
+  "events": {
+    "minGapMs": 8000,
+    "noneInFirstMs": 5000,
+    "noneInLastMs": 3000
+  },
+  "freeze": { "windowMs": 4000, "violationPenalty": 150, "graceMs": 300, "chancePerRound": 0.5, "warningMs": 3000 },
+  "bounty": { "bonus": 150 },
+  "roundTypes": {
+    "sequence": ["breakin", "hack", "breakin", "hack", "rival", "breakin"],
+    "breakin": { "steal": false, "payoutMult": 1.0, "tags": ["classic"], "banner": "BREAK-IN: classic jobs. Lasers, locks and guards." },
+    "hack": { "steal": false, "payoutMult": 1.25, "tags": ["cyber"], "banner": "HACK ROUND: cyber jobs, bigger payouts." },
+    "rival": { "steal": false, "payoutMult": 1.0, "tags": ["classic", "cyber"], "banner": "RIVAL ROUND: everyone gets a rival. Duel after duel, winner takes the pot." }
+  },
+  "rival": {
+    "_doc": "v3 live rival duels. Rival rounds (even player counts only) pair everyone up for duel after duel; rival events pause a normal round for one duel each. Winner's pot = payout.byDifficulty x potMult x the round's payout scale; the loser pays loserPenalty back to the bank.",
+    "potMult": 2.0,
+    "loserPenalty": 50,
+    "countdownMs": 3000,
+    "resultMs": 2500,
+    "betweenDuelsMs": 3500,
+    "forfeitAfterDisconnectMs": 5000,
+    "roundGames": ["tug-of-war", "type-race", "memory-duel", "quick-draw"],
+    "games": {
+      "tug-of-war": { "durationMs": 12000, "target": 25 },
+      "type-race": { "durationMs": 15000, "length": 6 },
+      "memory-duel": { "durationMs": 30000, "startLength": 3, "maxLevel": 8 },
+      "quick-draw": { "durationMs": 8000, "signalMinMs": 1500, "signalMaxMs": 4500 }
+    }
+  },
+  "rivalEvent": { "chancePerRound": 0.4, "fromRound": 2, "games": ["tug-of-war", "type-race", "quick-draw"] },
+  "hackerVsHacker": { "rounds": [4], "scrambleMs": 5000, "scrambleStrength": 0.8, "uses": 2, "bonusPerVictimFail": 100 },
+  "sabotage": {
+    "perPlayerPerRound": 1,
+    "durationMs": 6000,
+    "strength": 0.6,
+    "fromRound": 2,
+    "modifiers": ["shrunken-buttons", "screen-jitter", "false-alarm", "jam-the-signal"]
+  },
+  "wager": {
+    "tiers": {
+      "1": { "payoutMult": 1.0, "failPenaltyMult": 1.0 },
+      "2": { "payoutMult": 2.0, "failPenaltyMult": 2.5 },
+      "3": { "payoutMult": 3.5, "failPenaltyMult": 5.0 }
+    }
+  },
+  "teams": { "size": 2, "swapChance": 0.5 },
+  "net": { "heartbeatMs": 10000, "staleMs": 25000, "reconnectGraceMs": 30000, "maxStateHz": 8, "typicalBudgetBytes": 1024 },
+  "rateLimit": { "intentsPerSecond": 20, "scansPerSecond": 8 },
+  "presage": { "calmBonus": 50, "games": ["safecracker", "lockpick", "digital-lockpick"] },
+  "ai": { "geminiTimeoutMs": 5000, "daresTimeoutMs": 3000, "ttsTimeoutMs": 1500, "roastLinesMin": 4, "roastLinesMax": 6 },
+  "bots": { "successRate": 0.7, "thinkMinMs": 3000, "thinkMaxMs": 9000, "freezeViolationChance": 0.15, "disconnectChance": 0.02 }
+}

@@ -1,0 +1,20 @@
+{
+  "_doc": "PH-03 card deck. 'effect' is a key under cards.* in /shared/balance.json, so all cash amounts live there. Every physical card has an opt-out (optOut text); opting out of a physical card costs nothing.",
+  "cards": [
+    { "number": 1, "type": "dare", "effect": "dare", "title": "Getaway Monologue", "text": "Deliver a 10-second villain monologue about the vault you're about to crack.", "physical": false, "optOut": "Pay the opt-out fee." },
+    { "number": 2, "type": "dare", "effect": "dare", "title": "Inside Voice", "text": "Whisper everything you say until the next round starts. The crew judges.", "physical": false, "optOut": "Pay the opt-out fee." },
+    { "number": 3, "type": "dare", "effect": "dare", "title": "Alibi", "text": "Give the crew a ridiculous, detailed alibi for where you were last night. 15 seconds.", "physical": false, "optOut": "Pay the opt-out fee." },
+    { "number": 4, "type": "dare", "effect": "dare", "title": "Mugshot", "text": "Strike your best mugshot pose and hold it for 5 seconds without laughing.", "physical": false, "optOut": "Pay the opt-out fee." },
+    { "number": 5, "type": "workout", "effect": "workout", "title": "Vault Squats", "text": "Do 10 squats while counting out loud in a heist-movie accent.", "physical": true, "optOut": "Physical limits? Opt out free, no questions asked." },
+    { "number": 6, "type": "workout", "effect": "workout", "title": "Laser Limbo", "text": "Stand up and dodge imaginary lasers in slow motion for 10 seconds.", "physical": true, "optOut": "Physical limits? Opt out free, no questions asked." },
+    { "number": 7, "type": "workout", "effect": "workout", "title": "Getaway Run", "text": "Run in place for 15 seconds, narrating the police chase.", "physical": true, "optOut": "Physical limits? Opt out free, no questions asked." },
+    { "number": 8, "type": "workout", "effect": "workout", "title": "Safe Hands", "text": "Balance a key on the back of your hand for 10 seconds.", "physical": true, "optOut": "Physical limits? Opt out free, no questions asked." },
+    { "number": 9, "type": "double-or-nothing", "effect": "doubleOrNothing", "title": "Double or Nothing", "text": "Name 5 famous heist movies in 15 seconds. Crew votes on whether you made it.", "physical": false, "optOut": "Pay the opt-out fee." },
+    { "number": 10, "type": "double-or-nothing", "effect": "doubleOrNothing", "title": "Poker Face", "text": "Hold a straight face for 15 seconds while the crew tries to make you laugh (no touching).", "physical": false, "optOut": "Pay the opt-out fee." },
+    { "number": 11, "type": "double-or-nothing", "effect": "doubleOrNothing", "title": "Memory Palace", "text": "Recite every player's name and vault name, in seating order.", "physical": false, "optOut": "Pay the opt-out fee." },
+    { "number": 12, "type": "shield", "effect": "shield", "title": "Bodyguard", "text": "Convince the crew in 10 seconds why you deserve protection. If they agree, your next steal is blocked.", "physical": false, "optOut": "Pay the opt-out fee." },
+    { "number": 13, "type": "shield", "effect": "shield", "title": "Decoy Wallet", "text": "Describe your decoy wallet in loving detail. Crew approves = the next thief gets nothing.", "physical": false, "optOut": "Pay the opt-out fee." },
+    { "number": 14, "type": "steal-boost", "effect": "stealBoost", "title": "Sticky Fingers", "text": "Pitch your best pickpocket trick (mime it). Crew approves = your next steal takes extra.", "physical": true, "optOut": "Physical limits? Opt out free, no questions asked." },
+    { "number": 15, "type": "steal-boost", "effect": "stealBoost", "title": "Inside Info", "text": "Reveal one fake 'secret' about the bank's security system. Make it convincing.", "physical": false, "optOut": "Pay the opt-out fee." }
+  ]
+}
