@@ -10,7 +10,7 @@ import java.time.Duration;
 
 /** ElevenLabs text-to-speech. Key from ELEVENLABS_API_KEY; never committed. */
 public final class ElevenLabs {
-    public static final String DEFAULT_VOICE = "JBFqnCBsd6RMkjVDRZzb";
+    public static final String DEFAULT_VOICE = "pFZP5JQG7iQjIQuC4Bku";
 
     private final String key;
     public final String voiceId;
