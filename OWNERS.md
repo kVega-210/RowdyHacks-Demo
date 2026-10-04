@@ -23,7 +23,7 @@ shared index file** to add one.
 | `/server/src/main/java/heist/game/Teams.java` | `backend` | TM-01 |
 | `/server/src/main/java/heist/game/RivalHeist.java`, `/client/host/rival/*` | `sabotage` | MG-45 |
 | `/server/src/main/java/heist/game/HackerVsHacker.java` | `sabotage` | MG-18 |
-| `/server/src/main/java/heist/admin/*`, `/client/host/admin/*` | `tooling` | TL-02 |
+| `GameEngine#admin`, `/client/host/admin/*` | `tooling` | TL-02 |
 | `/server/src/main/java/heist/net/*` | `infra` | IF-03 |
 | `/server/src/main/java/heist/db/*`, `/server/db/*` | `data` | DB-01..04 |
 | `/server/src/main/java/heist/api/Dares.java`, `Gemini.java` | `ai` | AI-01 |

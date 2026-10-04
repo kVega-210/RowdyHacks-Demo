@@ -1,7 +1,7 @@
 {
   "_doc": "Every number the server (and clients) use lives here. See /docs/balance.md for the rationale. Times are milliseconds of game time.",
   "players": { "min": 2, "max": 8 },
-  "bank": { "startPerPlayer": 2500, "warnAtFractions": [0.75, 0.5, 0.25] },
+  "bank": { "startPerPlayer": 4000, "warnAtFractions": [0.75, 0.5, 0.25] },
   "rounds": {
     "count": 6,
     "briefingMs": 5000,

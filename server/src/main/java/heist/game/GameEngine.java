@@ -528,7 +528,8 @@ public final class GameEngine {
         String tierId = msg.path("wager").path("tier").asText(null);
         Wager.Tier tier = Wager.NONE;
         if (choice || (a.wrapper() != null && Wager.validWrapperTier(b, a.wrapper(), tierId))) tier = Wager.tier(b, tierId);
-        double score = Json.dbl(msg, "scoreMultiplier", 1.0);
+        // Only push-your-luck games (and the double-safe average of one) may scale the payout.
+        double score = pushLuck ? Json.dbl(msg, "scoreMultiplier", 1.0) : 1.0;
         if (Double.isNaN(score)) score = 1.0;
         score = Math.max(b.d("payout.minScoreMultiplier"), Math.min(b.d("payout.maxScoreMultiplier"), score));
 

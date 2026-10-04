@@ -1,0 +1,13 @@
+# IF-01 reverse proxy with automatic Let's Encrypt TLS. Caddy proxies WebSocket upgrades out of the box.
+# Replace the domain (IF-02) and drop this in /etc/caddy/Caddyfile.
+heisthavoc.example {
+	encode gzip
+	reverse_proxy 127.0.0.1:7070 {
+		# WebSockets: keep idle connections open; the game sends heartbeats every 10s.
+		flush_interval -1
+		transport http {
+			read_timeout 0
+			write_timeout 0
+		}
+	}
+}

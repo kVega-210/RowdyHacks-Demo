@@ -1,0 +1,18 @@
+# IF-01 systemd unit. Install: sudo cp deploy/heist-havoc.service /etc/systemd/system/ && sudo systemctl enable --now heist-havoc
+[Unit]
+Description=HEIST HAVOC! game server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=heist
+WorkingDirectory=/opt/heist-havoc
+# Secrets (HEIST_KEY_SECRET, DATABASE_URL, GEMINI_API_KEY, ELEVENLABS_API_KEY, PUBLIC_URL) live here, mode 600.
+EnvironmentFile=/opt/heist-havoc/.env
+Environment=HEIST_ROOT=/opt/heist-havoc
+ExecStart=/usr/bin/java -XX:MaxRAMPercentage=70 -jar /opt/heist-havoc/server/target/heist-server.jar
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target
