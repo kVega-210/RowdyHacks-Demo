@@ -4,7 +4,7 @@ const STYLE = `
 .hh-term{position:relative;display:flex;flex-direction:column;background:#020c05;color:#39ff7a;border-top:3px solid #1f8f45;
   font:600 14px/1.35 ui-monospace,"Cascadia Mono","Consolas",Menlo,monospace;overflow:hidden;z-index:40;
   text-shadow:0 0 6px rgba(57,255,122,.55);box-shadow:inset 0 0 40px rgba(0,255,90,.08)}
-.hh-term::after{content:'';position:absolute;inset:0;pointer-events:none;
+.hh-term::after{content:'';position:absolute;top:0;right:0;bottom:0;left:0;pointer-events:none;
   background:repeating-linear-gradient(0deg,rgba(0,0,0,.28) 0 1px,transparent 1px 3px);animation:hhTermFlicker 4s steps(2) infinite}
 @keyframes hhTermFlicker{50%{opacity:.85}}
 .hh-term-head{display:flex;justify-content:space-between;padding:3px 10px;background:#0a2a14;color:#9dffbe;font-size:11px;letter-spacing:.18em;border-bottom:1px solid #1f8f45}

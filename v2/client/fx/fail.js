@@ -24,7 +24,7 @@ export function captionFor(gameId) {
 }
 
 const STYLE = `
-.hh-fx{position:absolute;inset:0;z-index:50;pointer-events:none;overflow:hidden}
+.hh-fx{position:absolute;top:0;right:0;bottom:0;left:0;z-index:50;pointer-events:none;overflow:hidden}
 .hh-fx-cap{position:absolute;left:0;right:0;bottom:12%;text-align:center;font:900 22px system-ui,sans-serif;color:#fff;
   text-shadow:0 3px 0 #000,0 0 12px #000;padding:0 16px;animation:hhCap .35s ease-out both}
 @keyframes hhCap{from{transform:scale(.4) rotate(-6deg);opacity:0}to{transform:none;opacity:1}}
@@ -37,7 +37,7 @@ const STYLE = `
 @keyframes hhNet{from{transform:translateY(-100%) scale(1.4)}to{transform:none}}
 .hh-shake{animation:hhShake .4s linear}
 @keyframes hhShake{0%,100%{transform:none}20%{transform:translate(-8px,4px)}40%{transform:translate(7px,-5px)}60%{transform:translate(-5px,-3px)}80%{transform:translate(4px,5px)}}
-.hh-win{position:absolute;inset:0;z-index:50;pointer-events:none;background:radial-gradient(circle,rgba(61,255,154,.55),transparent 70%);animation:hhWin .5s ease-out both}
+.hh-win{position:absolute;top:0;right:0;bottom:0;left:0;z-index:50;pointer-events:none;background:radial-gradient(circle,rgba(61,255,154,.55),transparent 70%);animation:hhWin .5s ease-out both}
 @keyframes hhWin{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:none}}
 `;
 function ensureStyle() {

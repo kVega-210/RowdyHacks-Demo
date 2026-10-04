@@ -8,9 +8,9 @@ css('mg-safecracker', `
 .sc-combo span{min-width:54px;padding:4px 8px;border-radius:8px;background:#000;border:2px solid #2a3555;font:900 24px ui-monospace,monospace;text-align:center}
 .sc-combo span.now{border-color:#ffd84d;color:#ffd84d}.sc-combo span.ok{border-color:#3dff9a;color:#3dff9a}
 .sc-dial{position:relative;width:min(62vw,230px);aspect-ratio:1;margin:6px auto;border-radius:50%;background:radial-gradient(#3b4154,#1a1e29);border:6px solid #8a91a6}
-.sc-face{position:absolute;inset:0}
+.sc-face{position:absolute;top:0;right:0;bottom:0;left:0}
 .sc-face i{position:absolute;left:50%;top:4px;width:2px;height:10px;background:#cfd6e6;transform-origin:50% calc(min(62vw,230px)/2 - 10px)}
-.sc-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:900 44px ui-monospace,monospace;color:#ffd84d}
+.sc-num{position:absolute;top:0;right:0;bottom:0;left:0;display:flex;align-items:center;justify-content:center;font:900 44px ui-monospace,monospace;color:#ffd84d}
 .sc-mark{position:absolute;left:50%;top:-14px;margin-left:-8px;border:8px solid transparent;border-top:12px solid #ff5c7a}
 .sc-label{text-align:center;font:900 24px system-ui,sans-serif;letter-spacing:.12em;color:#ff5c7a;margin:8px 0 2px;text-shadow:0 0 10px #ff224466}
 .sc-stop{display:block;margin:6px auto 0;width:80%;height:64px;font-size:26px}

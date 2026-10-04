@@ -33,6 +33,7 @@ import io.javalin.http.staticfiles.Location;
 import java.net.Inet4Address;
 import java.net.NetworkInterface;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -149,6 +150,11 @@ public final class HeistServer {
             System.out.println("  host screen : " + publicUrl() + "/host/");
             System.out.println("  phones      : " + publicUrl() + "/phone/");
             System.out.println("  sandbox     : " + publicUrl() + "/dev/minigame-sandbox/");
+            List<String[]> others = lanCandidates();
+            if (others.size() > 1 && System.getenv("PUBLIC_URL") == null) {
+                System.out.println("  Phones can't connect? Try another address, then set PUBLIC_URL=http://<address>:" + app.port() + " in .env:");
+                for (String[] c : others) System.out.println("    http://" + c[0] + ":" + app.port() + "/phone/   (" + c[1] + ")");
+            }
             System.out.println("  event log   : " + events.stats().get("sink"));
             System.out.println("  gemini=" + gemini.enabled() + " elevenlabs=" + eleven.enabled());
         }
@@ -180,18 +186,43 @@ public final class HeistServer {
         return "http://" + lanIp() + ":" + (app == null ? o.port : app.port());
     }
 
+    /**
+     * The address phones should use. Windows laptops often list virtual adapters first (Hyper-V/WSL "vEthernet",
+     * VirtualBox, VMware, VPNs, Docker), which phones can't reach, so score every IPv4 candidate and prefer a real
+     * Wi-Fi/Ethernet adapter on a home-style 192.168.x / 10.x network. PUBLIC_URL overrides all of this.
+     */
     static String lanIp() {
+        List<String[]> c = lanCandidates();
+        return c.isEmpty() ? "localhost" : c.get(0)[0];
+    }
+
+    /** All usable IPv4 addresses, best first, as {address, interface name}. */
+    static List<String[]> lanCandidates() {
+        List<String[]> out = new ArrayList<>();
+        List<Integer> scores = new ArrayList<>();
         try {
             for (NetworkInterface ni : Collections.list(NetworkInterface.getNetworkInterfaces())) {
-                if (!ni.isUp() || ni.isLoopback() || ni.isVirtual()) continue;
+                if (!ni.isUp() || ni.isLoopback() || ni.isVirtual() || ni.isPointToPoint()) continue;
+                String name = (ni.getName() + " " + ni.getDisplayName()).toLowerCase();
                 for (var addr : Collections.list(ni.getInetAddresses())) {
-                    if (addr instanceof Inet4Address && !addr.isLoopbackAddress()) return addr.getHostAddress();
+                    if (!(addr instanceof Inet4Address) || addr.isLoopbackAddress() || addr.isLinkLocalAddress()) continue;
+                    String ip = addr.getHostAddress();
+                    int score = 0;
+                    if (name.matches(".*(vethernet|hyper-v|wsl|virtualbox|vbox|vmware|docker|\\bbr-|\\bveth|vpn|\\btap|\\btun\\d|tailscale|zerotier|hamachi|bluetooth|npcap).*")) score -= 100;
+                    if (name.matches(".*(wi-?fi|wlan|wireless|802\\.11|en0|en1|eth|ethernet).*")) score += 20;
+                    if (ip.startsWith("192.168.")) score += 30;
+                    else if (ip.startsWith("10.")) score += 20;
+                    else if (ip.matches("172\\.(1[6-9]|2[0-9]|3[01])\\..*")) score += 5;
+                    int i = 0;
+                    while (i < scores.size() && scores.get(i) >= score) i++;
+                    scores.add(i, score);
+                    out.add(i, new String[] {ip, ni.getDisplayName()});
                 }
             }
         } catch (Exception ignored) {
             // fall through
         }
-        return "localhost";
+        return out;
     }
 
     // ------------------------------------------------------------------ REST

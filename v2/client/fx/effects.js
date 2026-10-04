@@ -8,7 +8,7 @@ const STYLE = `
 @keyframes hhDollar{0%{transform:translateY(8px) scale(.4);opacity:0}15%{transform:translateY(0) scale(1.15);opacity:1}100%{transform:translateY(-80px) scale(1);opacity:0}}
 .hh-ans-good{background:#14ff5a!important;color:#022a0d!important;box-shadow:0 0 0 4px #b9ffcf inset,0 0 22px #14ff5a!important;border-color:#14ff5a!important}
 .hh-ans-bad{background:#ff1a3c!important;color:#fff!important;box-shadow:0 0 0 4px #ffc2cc inset,0 0 22px #ff1a3c!important;border-color:#ff1a3c!important}
-.hh-matrix{position:absolute;inset:0;z-index:60;pointer-events:none;width:100%;height:100%}
+.hh-matrix{position:absolute;top:0;right:0;bottom:0;left:0;z-index:60;pointer-events:none;width:100%;height:100%}
 `;
 function ensureStyle() {
   if (document.getElementById('css-hh-effects')) return;

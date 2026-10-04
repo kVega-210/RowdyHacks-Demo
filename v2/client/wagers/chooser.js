@@ -3,7 +3,7 @@
 import { h, css } from '../fx/kit.js';
 
 css('hh-chooser', `
-.hh-choose{position:absolute;inset:0;display:flex;flex-direction:column;gap:10px;padding:12px;background:#070a12ee;z-index:20;
+.hh-choose{position:absolute;top:0;right:0;bottom:0;left:0;display:flex;flex-direction:column;gap:10px;padding:12px;background:#070a12ee;z-index:20;
   color:#e9f1ff;font:16px system-ui,sans-serif;touch-action:none;user-select:none;-webkit-user-select:none}
 .hh-choose h2{margin:4px 0 0;text-align:center;color:#ffd84d;font-size:22px;letter-spacing:.05em;text-transform:uppercase}
 .hh-choose p{margin:0;text-align:center;opacity:.85}
@@ -17,7 +17,7 @@ css('hh-chooser', `
 .hh-choose .opts.tiles .opt{position:relative;overflow:hidden;padding:0;border:0;color:#0b0f1a;display:block;box-shadow:0 5px 0 #0006}
 .hh-choose .opts.tiles .opt.safe{background:#3dff9a}.hh-choose .opts.tiles .opt.risky{background:#ff9f43}.hh-choose .opts.tiles .opt.wild{background:#ff5c7a}
 .hh-choose .opts.tiles .opt{container-type:size}
-.hh-choose .opts.tiles .opt .icon{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+.hh-choose .opts.tiles .opt .icon{position:absolute;top:0;right:0;bottom:0;left:0;display:flex;align-items:center;justify-content:center;
   font-size:86cqh;line-height:1}
 .hh-choose .opts.tiles .opt .tab{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);background:#0b0f1a;color:#fff;
   font:800 15px system-ui,sans-serif;padding:4px 12px;border-radius:10px 10px 6px 6px;white-space:nowrap}

@@ -10,8 +10,8 @@
 html, body { margin: 0; height: 100%;
   background: rgb(calc(7 + 128*var(--heat,0)) calc(10 - 6*var(--heat,0)) calc(18 - 12*var(--heat,0))); transition: background .8s linear; color: var(--ink); overscroll-behavior: none;
   font: 16px/1.3 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-text-size-adjust: 100%; }
-body { position: fixed; inset: 0; overflow: hidden; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
-#app { position: absolute; inset: 0; padding-top: var(--sat); padding-bottom: var(--sab); display: flex; flex-direction: column; }
+body { position: fixed; top: 0; right: 0; bottom: 0; left: 0; overflow: hidden; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+#app { position: absolute; top: 0; right: 0; bottom: 0; left: 0; padding-top: var(--sat); padding-bottom: var(--sab); display: flex; flex-direction: column; }
 button { font: inherit; touch-action: manipulation; }
 input { font: inherit; font-size: 20px; user-select: text; -webkit-user-select: text; }
 
@@ -33,7 +33,7 @@ input { font: inherit; font-size: 20px; user-select: text; -webkit-user-select: 
 #terminal { flex: none; height: 22vh; min-height: 118px; }
 main#view { flex: 1; min-height: 0; overflow-y: auto; padding: 14px; -webkit-overflow-scrolling: touch; }
 #game { position: relative; flex: 1; min-height: 0; overflow: hidden; }
-#game > .gamebox { position: absolute; inset: 0; }
+#game > .gamebox { position: absolute; top: 0; right: 0; bottom: 0; left: 0; }
 
 /* Generic UI */
 h1, h2 { margin: 0 0 10px; letter-spacing: .04em; }
@@ -69,8 +69,8 @@ label.lbl { display: block; font-weight: 700; color: var(--dim); margin-top: 12p
 .wait b { display: block; font-size: 28px; color: var(--ink); margin-bottom: 8px; }
 
 /* Overlays (CL-05) */
-#overlay { position: absolute; inset: 0; pointer-events: none; z-index: 50; }
-.ov { position: absolute; inset: 0; pointer-events: auto; display: flex; flex-direction: column; align-items: center; justify-content: center;
+#overlay { position: absolute; top: 0; right: 0; bottom: 0; left: 0; pointer-events: none; z-index: 50; }
+.ov { position: absolute; top: 0; right: 0; bottom: 0; left: 0; pointer-events: auto; display: flex; flex-direction: column; align-items: center; justify-content: center;
   padding: calc(16px + var(--sat)) 16px calc(16px + var(--sab)); text-align: center; animation: ovIn .2s ease-out; }
 @keyframes ovIn { from { opacity: 0; transform: scale(1.1); } }
 .ov h1 { font-size: 54px; margin: 0; text-shadow: 0 4px 0 #000; }
@@ -90,7 +90,7 @@ label.lbl { display: block; font-weight: 700; color: var(--dim); margin-top: 12p
 /* Scanner (CL-06) */
 .scanner { position: relative; width: 100%; max-width: 380px; aspect-ratio: 1; border-radius: 18px; overflow: hidden; background: #000; border: 3px solid var(--gold); }
 .scanner video { width: 100%; height: 100%; object-fit: cover; }
-.scanner .reticle { position: absolute; inset: 18%; border: 3px dashed #fff8; border-radius: 12px; }
+.scanner .reticle { position: absolute; top: 18%; right: 18%; bottom: 18%; left: 18%; border: 3px dashed #fff8; border-radius: 12px; }
 .scanner .msg { position: absolute; left: 0; right: 0; bottom: 8px; font-weight: 700; text-shadow: 0 2px 4px #000; }
 
 /* Toasts */

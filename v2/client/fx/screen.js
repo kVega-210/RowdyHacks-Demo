@@ -11,7 +11,7 @@ let chain = Promise.resolve();
 function getCurtain() {
   if (curtain && curtain.isConnected) return curtain;
   curtain = document.createElement('div');
-  Object.assign(curtain.style, { position: 'fixed', inset: '0', background: '#000', opacity: '0', pointerEvents: 'none', zIndex: '150', transition: 'opacity 130ms ease-in' });
+  Object.assign(curtain.style, { position: 'fixed', top: '0', right: '0', bottom: '0', left: '0', background: '#000', opacity: '0', pointerEvents: 'none', zIndex: '150', transition: 'opacity 130ms ease-in' });
   document.body.append(curtain);
   return curtain;
 }

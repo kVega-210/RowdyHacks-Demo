@@ -4,7 +4,7 @@
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font: 22px/1.25 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; overflow: hidden; }
-#screen { position: absolute; inset: 0; display: flex; flex-direction: column; transition: background .8s linear;
+#screen { position: absolute; top: 0; right: 0; bottom: 0; left: 0; display: flex; flex-direction: column; transition: background .8s linear;
   background: radial-gradient(ellipse at 50% -20%, rgb(calc(26 + 204*var(--heat,0)) calc(38 - 28*var(--heat,0)) calc(80 - 64*var(--heat,0))),
     rgb(calc(5 + 130*var(--heat,0)) calc(7 - 4*var(--heat,0)) calc(13 - 9*var(--heat,0))) 60%); }
 /* v2 terminal: bottom ~22% of the screen, logs every event */
@@ -86,7 +86,7 @@ button { font: inherit; cursor: pointer; }
 #banner .raid { background: var(--gold); color: #0b0f1a; text-shadow: none; } #banner .escape { background: var(--green); color: #0b0f1a; text-shadow: none; }
 #banner .info { background: var(--panel); color: var(--ink); border: 4px solid var(--gold); font-size: 64px; }
 @keyframes bannerIn { from { transform: scale(.2) rotate(-6deg); opacity: 0; } }
-#flash { position: absolute; inset: 0; pointer-events: none; z-index: 30; }
+#flash { position: absolute; top: 0; right: 0; bottom: 0; left: 0; pointer-events: none; z-index: 30; }
 #flash.steal { animation: flashRed .3s steps(2) 6; } #flash.freeze { background: #9fe3ff33; } #flash.raid { animation: flashGold .3s steps(2) 6; }
 @keyframes flashRed { 50% { background: #ff224466; } } @keyframes flashGold { 50% { background: #ffd84d55; } }
 

@@ -4,7 +4,7 @@ import { game, h, css, byD } from '../fx/kit.js';
 export const meta = { id: 'lockpick', name: 'Lockpick', tags: ['classic'], baseDurationMs: 12000 };
 
 css('mg-lockpick', `
-.lp-lock{position:absolute;inset:0 0 116px;display:flex;gap:10px;justify-content:center;align-items:stretch;padding:10px}
+.lp-lock{position:absolute;top:0;right:0;bottom:116px;left:0;display:flex;gap:10px;justify-content:center;align-items:stretch;padding:10px}
 .lp-pin{position:relative;flex:1;max-width:70px;background:#121a2e;border:3px solid #2a3555;border-radius:12px;overflow:hidden;transition:opacity .2s,filter .2s}
 .lp-pin.wait{opacity:.35;filter:grayscale(1) brightness(.7)}
 .lp-pin.active{border-color:#ffd84d;box-shadow:0 0 12px #ffd84d88}

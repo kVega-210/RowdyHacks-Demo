@@ -20,6 +20,18 @@ HEIST_TIME_SCALE=4 PORT=7172 ./run.sh           # sped-up server, then:
 node scripts/browser-check/e2e.mjs http://localhost:7172   # host + phone + bots full game
 ```
 
+## Phones can't load the game?
+- **Blank or error screen on the phone:** open the link in the phone's normal browser (Chrome on Android, Safari on
+  iPhone), not inside a QR-scanner or social app. The game now shows a readable error instead of a blank page; send us
+  the red "Details" text if you see it. It needs roughly iOS 13+ / Android Chrome 80+.
+- **The page never loads at all (times out):** the phone can't reach the laptop.
+  - Phone and laptop must be on the **same Wi-Fi** (not a guest network with "client isolation", not mobile data).
+  - On Windows, allow Java through the firewall for **Private** networks when asked (or in *Windows Defender Firewall ->
+    Allow an app*), and set the Wi-Fi network profile to *Private*.
+  - The server prints the address it put in the QR code, plus alternatives if the laptop has several network adapters.
+    If the QR address doesn't work, try the others and put the working one in `v2/.env` as
+    `PUBLIC_URL=http://192.168.x.x:7071`.
+
 ## What changed from v1
 **Everywhere**
 - Fallout-style green terminal on the bottom ~22% of every screen. Phones log your own events; the host logs everyone's.

@@ -60,7 +60,7 @@ export function css(id, text) {
 }
 
 css('hh-kit', `
-.hh-game{position:absolute;inset:0;display:flex;flex-direction:column;
+.hh-game{position:absolute;top:0;right:0;bottom:0;left:0;display:flex;flex-direction:column;
   background:radial-gradient(circle at 50% 0%,rgb(calc(24 + 206*var(--heat,0)) calc(34 - 24*var(--heat,0)) calc(61 - 45*var(--heat,0))),rgb(calc(7 + 128*var(--heat,0)) calc(10 - 6*var(--heat,0)) calc(18 - 12*var(--heat,0))) 70%);
   transition:background .8s linear;
   color:#e9f1ff;font:16px/1.25 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;user-select:none;-webkit-user-select:none;
@@ -81,7 +81,7 @@ css('hh-kit', `
 .hh-btn.dim{background:#2a3555;color:#9fb0d6;box-shadow:0 4px 0 #141b2e}
 .hh-btn[disabled]{opacity:.45}
 .hh-grid{display:grid;gap:10px;width:100%;height:100%}
-.hh-center{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px}
+.hh-center{position:absolute;top:0;right:0;bottom:0;left:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px}
 .hh-big{font-size:42px;font-weight:900;letter-spacing:.05em}
 .hh-mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
 .hh-row{display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap}

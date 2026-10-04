@@ -4,7 +4,7 @@ import { game, h, css, byD, drag } from '../fx/kit.js';
 export const meta = { id: 'laser-grid', name: 'Laser Grid', tags: ['classic'], baseDurationMs: 12000 };
 
 css('mg-laser-grid', `
-.lg-field{position:absolute;inset:0 0 40px;background:#05070d;border:2px solid #2a3555;border-radius:12px;overflow:hidden;touch-action:none}
+.lg-field{position:absolute;top:0;right:0;bottom:40px;left:0;background:#05070d;border:2px solid #2a3555;border-radius:12px;overflow:hidden;touch-action:none}
 .lg-goal{position:absolute;left:0;right:0;top:0;height:9%;background:#3dff9a33;border-bottom:2px dashed #3dff9a;display:flex;align-items:center;justify-content:center;font-size:28px;line-height:1}
 .lg-beam{position:absolute;height:6px;background:#ff2244;box-shadow:0 0 10px #ff2244,0 0 2px #fff;border-radius:3px}
 .lg-dot{position:absolute;width:34px;height:34px;margin:-17px 0 0 -17px;font-size:30px;line-height:34px;text-align:center;filter:drop-shadow(0 0 6px #ffd84d)}

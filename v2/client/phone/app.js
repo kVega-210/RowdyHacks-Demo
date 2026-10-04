@@ -13,7 +13,8 @@ import { createTerminal } from '../fx/terminal.js';
 import { sirenRise, sirenClear } from '../fx/siren.js';
 import { fadeSwap, setHeat } from '../fx/screen.js';
 
-const balance = await fetch('/shared/balance.json').then((r) => r.json());
+// Loaded by /boot.js before this module runs (no top-level await: older phone browsers can't parse it).
+const balance = window.__HH.balance;
 
 const store = {
   room: null, playerId: null, token: null, name: null, phase: null, state: null, me: null,

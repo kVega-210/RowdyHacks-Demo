@@ -10,10 +10,10 @@ const FACES = ['😎', '🧐', '🥸', '😐', '😏'];
 css('mg-disguise', `
 .dc-card{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;border-radius:12px;padding:4px 8px;line-height:1}
 .dc-card .hat{font-size:28px}.dc-card .face{font-size:34px}.dc-card .suit{width:40px;height:20px;border-radius:10px 10px 4px 4px;margin-top:2px}
-.dc-show{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}
+.dc-show{position:absolute;top:0;right:0;bottom:0;left:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}
 .dc-show .dc-card{transform:scale(1.7);margin:34px}
 .dc-remember{font:900 28px system-ui,sans-serif;letter-spacing:.14em;color:#ffd84d;text-shadow:0 0 10px #ffd84d66}
-.dc-pick{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+.dc-pick{position:absolute;top:0;right:0;bottom:0;left:0;display:flex;align-items:center;justify-content:center}
 .dc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%}
 .dc-grid .hh-btn{min-height:0;height:96px;padding:2px;background:#16213a;box-shadow:0 0 0 2px #2a3555 inset,0 4px 0 #0a0f1c}
 `);

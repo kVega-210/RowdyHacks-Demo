@@ -5,7 +5,7 @@ export const meta = { id: 'getaway-driver', name: 'Getaway Driver', tags: ['clas
 
 css('mg-getaway', `
 .gd-road{position:absolute;left:0;right:0;top:0;bottom:106px;margin:0 auto;max-width:360px;background:#2b2f3a;border-left:6px solid #ffd84d;border-right:6px solid #ffd84d;overflow:hidden;border-radius:8px}
-.gd-road:before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 32%,#ffffff22 32% 34%,transparent 34% 66%,#ffffff22 66% 68%,transparent 68%)}
+.gd-road:before{content:'';position:absolute;top:0;right:0;bottom:0;left:0;background:repeating-linear-gradient(90deg,transparent 0 32%,#ffffff22 32% 34%,transparent 34% 66%,#ffffff22 66% 68%,transparent 68%)}
 .gd-o{position:absolute;width:33.3%;text-align:center;font-size:54px;line-height:1;margin-top:-27px}
 .gd-car{position:absolute;bottom:6px;width:33.3%;text-align:center;font-size:64px;line-height:1;transition:left .09s}
 .gd-pad{position:absolute;left:0;right:0;bottom:0;display:flex;gap:12px;justify-content:center}

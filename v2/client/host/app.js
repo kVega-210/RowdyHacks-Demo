@@ -11,8 +11,9 @@ import * as rivalView from './rival/rival.js';
 import * as finalView from './final/final.js';
 import { sfx, music, unlockAudio } from '../fx/sfx.js';
 
-const balance = await fetch('/shared/balance.json').then((r) => r.json());
-const info = await fetch('/api/info').then((r) => r.json()).catch(() => ({ publicUrl: location.origin }));
+// Loaded by /boot.js before this module runs (no top-level await: older browsers can't parse it).
+const balance = window.__HH.balance;
+const info = window.__HH.info || { publicUrl: location.origin };
 const KEY = 'hh.host';
 const load = () => { try { return JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (_) { return null; } };
 const save = (v) => { try { localStorage.setItem(KEY, JSON.stringify(v)); } catch (_) { /* ok */ } };

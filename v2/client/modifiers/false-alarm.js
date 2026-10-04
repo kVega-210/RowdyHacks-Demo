@@ -5,7 +5,7 @@ import { timed, styleOnce } from './_shared.js';
 export const meta = { id: 'false-alarm', name: 'False Alarm', tags: ['sabotage'] };
 
 styleOnce('false-alarm', `
-.mod-alarm{position:absolute;inset:0;z-index:40;pointer-events:none;display:flex;align-items:center;justify-content:center;
+.mod-alarm{position:absolute;top:0;right:0;bottom:0;left:0;z-index:40;pointer-events:none;display:flex;align-items:center;justify-content:center;
   font:900 34px system-ui,sans-serif;color:#fff;text-shadow:0 3px 0 #000;letter-spacing:.06em;animation:modAlarm .5s steps(2) infinite}
 @keyframes modAlarm{0%{background:rgba(255,0,40,.35)}100%{background:rgba(255,0,40,0)}}
 .mod-alarm span{max-width:86%;text-align:center;overflow-wrap:anywhere;transform:rotate(-8deg);border:4px solid #fff;padding:6px 14px;border-radius:10px;background:#ff2244aa}

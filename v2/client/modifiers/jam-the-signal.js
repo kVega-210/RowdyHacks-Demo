@@ -5,7 +5,7 @@ import { timed, styleOnce, controlsIn } from './_shared.js';
 export const meta = { id: 'jam-the-signal', name: 'Jam the Signal', tags: ['sabotage'] };
 
 styleOnce('jam', `
-.mod-jam-noise{position:absolute;inset:0;z-index:40;pointer-events:none;mix-blend-mode:screen;
+.mod-jam-noise{position:absolute;top:0;right:0;bottom:0;left:0;z-index:40;pointer-events:none;mix-blend-mode:screen;
   background:repeating-linear-gradient(0deg,rgba(255,255,255,.08) 0 2px,transparent 2px 4px);animation:modJam .12s steps(3) infinite}
 @keyframes modJam{0%{transform:translateY(0)}50%{transform:translateY(-3px)}100%{transform:translateY(2px)}}
 .mod-jam-text{position:absolute;top:8px;left:0;right:0;text-align:center;font:900 14px ui-monospace,monospace;color:#3dff9a;z-index:41;pointer-events:none}

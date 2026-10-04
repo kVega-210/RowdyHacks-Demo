@@ -7,7 +7,7 @@ css('mg-laser-timing', `
 .lt-room{position:relative;height:200px;border-radius:12px;background:#05070d;border:2px solid #2a3555;overflow:hidden;margin:6px 0 4px}
 .lt-beam{position:absolute;top:0;bottom:0;width:6px;margin-left:-3px;background:#ff2244;box-shadow:0 0 14px #ff2244}
 .lt-hbeam{position:absolute;left:0;right:0;height:6px;margin-top:-3px;background:#ff2244;box-shadow:0 0 14px #ff2244}
-.lt-svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible;filter:drop-shadow(0 0 6px #ff2244)}
+.lt-svg{position:absolute;top:0;right:0;bottom:0;left:0;width:100%;height:100%;overflow:visible;filter:drop-shadow(0 0 6px #ff2244)}
 .lt-svg line{stroke:#ff2244;stroke-width:6px;stroke-linecap:round;vector-effect:non-scaling-stroke}
 .lt-body{position:absolute;bottom:6px;height:22px;border-radius:6px;background:#3dff9a44;border:2px dashed #3dff9a;box-sizing:border-box}
 .lt-label{text-align:center;font:900 24px system-ui,sans-serif;letter-spacing:.12em;color:#ff5c7a;margin:6px 0 4px;text-shadow:0 0 10px #ff224466}
