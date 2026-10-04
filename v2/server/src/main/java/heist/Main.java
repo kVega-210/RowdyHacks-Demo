@@ -26,7 +26,19 @@ public final class Main {
                     o.timeScale = Double.parseDouble(scale);
                     o.clock = heist.util.Clock.scaled(o.timeScale);
                 }
-                HeistServer s = new HeistServer(o).start();
+                HeistServer s;
+                try {
+                    s = new HeistServer(o).start();
+                } catch (RuntimeException e) {
+                    if (isPortInUse(e)) {
+                        System.err.println();
+                        System.err.println("Port " + o.port + " is already in use, so the game server could not start.");
+                        System.err.println("Another copy of the game (or the v1 game) is probably still running: close that window,");
+                        System.err.println("or pick another port by setting PORT=<number> in .env, then open http://localhost:<number>/host/");
+                        System.exit(1);
+                    }
+                    throw e;
+                }
                 Runtime.getRuntime().addShutdownHook(new Thread(s::stop));
             }
             case "bots" -> heist.tools.Bots.main(rest);
@@ -38,5 +50,13 @@ public final class Main {
                 System.exit(2);
             }
         }
+    }
+
+    private static boolean isPortInUse(Throwable e) {
+        for (Throwable t = e; t != null; t = t.getCause()) {
+            if (t instanceof java.net.BindException) return true;
+            if (t.getMessage() != null && t.getMessage().toLowerCase().contains("address already in use")) return true;
+        }
+        return false;
     }
 }
