@@ -30,6 +30,9 @@ public final class Room implements Outbox {
     private final Consumer<Integer> botLauncher;
     private Consumer<Map<String, Object>> observer = m -> { };
     volatile long lastActivity = System.currentTimeMillis();
+    private static final long MOVE_OFFLINE_MS = 60_000;
+    private final Map<String, String> forward = new ConcurrentHashMap<>(); // "New heist": old player id -> token in movedTo
+    private volatile Room movedTo;
 
     Room(String code, Clock clock, java.util.function.Function<Outbox, GameEngine> engineFactory, Consumer<Integer> botLauncher) {
         this.code = code;
@@ -122,18 +125,71 @@ public final class Room implements Outbox {
     // ---------------------------------------------------------------- phones
 
     public synchronized void join(Conn c, String name, boolean bot) {
+        join(c, name, bot, null);
+    }
+
+    /** Adds a player (keeping {@code face} if given) and returns their token. With no connection the player starts
+     *  offline and comes in by resuming with that token. */
+    private synchronized String join(Conn c, String name, boolean bot, String face) {
         lastActivity = System.currentTimeMillis();
-        PlayerState p = engine.addPlayer(name, bot);
-        bindPhone(c, p.id);
+        PlayerState p = engine.addPlayer(name, bot, face);
         String token = tokens.issue(p.id);
+        if (c == null) {
+            engine.setConnected(p.id, false, clock.now());
+            return token;
+        }
+        bindPhone(c, p.id);
         c.send(Json.msg("welcome", "role", "phone", "room", code, "playerId", p.id, "name", p.name, "token", token,
                 "face", p.face));
         engine.resync(p.id, clock.now());
+        return token;
+    }
+
+    /**
+     * v3 "New heist": move the crew (same name, face and bot flag) and every host screen into {@code fresh}'s lobby.
+     * Connected phones get a new welcome, which the clients treat as "you are in this room now". Players who dropped
+     * in the last minute (a locked phone, a Wi-Fi blip) come along too: their old token is forwarded to the new room
+     * when they reconnect. Anyone gone longer stays behind in this finished room.
+     */
+    synchronized void moveTo(Room fresh) {
+        if (engine.phase() != heist.game.Phase.END) throw new GameError("game_in_progress", "Finish this heist first");
+        long now = clock.now();
+        for (PlayerState p : java.util.List.copyOf(engine.players().values())) {
+            Conn c = phones.remove(p.id);
+            boolean live = c != null && !c.isClosed();
+            boolean recent = !p.connected && p.disconnectedAt >= 0 && now - p.disconnectedAt < MOVE_OFFLINE_MS;
+            if (!live && !recent) continue;
+            if (live) c.playerId = null;
+            try {
+                forward.put(p.id, fresh.join(live ? c : null, p.name, p.bot, p.face));
+            } catch (GameError e) {
+                if (live) {
+                    c.roomCode = null;
+                    c.send(Json.msg("error", "code", e.code, "message", e.getMessage()));
+                }
+            }
+        }
+        movedTo = fresh;
+        for (Conn h : java.util.List.copyOf(hosts)) {
+            hosts.remove(h);
+            fresh.attachHost(h);
+        }
+    }
+
+    /** The room this crew plays in now (follows "New heist" moves). */
+    public Room current() {
+        Room r = this;
+        while (r.movedTo != null) r = r.movedTo;
+        return r;
     }
 
     public synchronized void resume(Conn c, String token) {
         lastActivity = System.currentTimeMillis();
         String pid = tokens.playerFor(token);
+        if (movedTo != null && pid != null && forward.containsKey(pid)) { // this crew moved on to a new heist
+            movedTo.resume(c, forward.get(pid));
+            return;
+        }
         PlayerState p = pid == null ? null : engine.players().get(pid);
         if (p == null) throw new GameError("bad_token", "Session expired. Join again.");
         Conn old = phones.get(pid);

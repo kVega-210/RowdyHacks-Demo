@@ -13,7 +13,7 @@ export function render(main, f, roast, room) {
       <div class="podium">${top.map((r, i) => (r ? `<div class="step p${[2, 1, 3][i]}"><div class="medal">${medals[i]} ${esc(r.face || '')}</div><div class="nm">${esc(r.name)}</div><div style="color:var(--gold)">${money(r.stash)}</div></div>` : '<div class="step" style="visibility:hidden"></div>')).join('')}</div>
       <div class="awards" id="awards"></div>
       <div class="roast" id="roast"><div class="panel">🎤 The Mastermind is preparing the roast...</div></div>
-      <div class="final-foot">Replay: ${esc(location.origin)}/replay/?room=${esc(room)} · <a href="/host/" style="color:var(--cyan)">New heist</a></div>
+      <div class="final-foot">Replay: ${esc(location.origin)}/replay/?room=${esc(room)} · <button class="btn" data-new-heist title="New room, same crew">▶ New heist (same crew)</button></div>
     </div>`;
   if (roast) renderRoast(roast);
 }

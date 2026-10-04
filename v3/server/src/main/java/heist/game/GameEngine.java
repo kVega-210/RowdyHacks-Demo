@@ -45,6 +45,16 @@ public final class GameEngine {
             if (s.has("seed") && s.get("seed").canConvertToLong()) seed = s.get("seed").asLong();
         }
 
+        /** Same choices for the next heist (a fresh seed, so it isn't a replay of this one). */
+        public Settings copy() {
+            Settings c = new Settings();
+            c.virtualKeys = virtualKeys;
+            c.teams = teams;
+            c.rounds = rounds;
+            c.games = games == null ? null : new ArrayList<>(games);
+            return c;
+        }
+
         public Map<String, Object> toMap() {
             return Json.obj("virtualKeys", virtualKeys, "teams", teams, "rounds", rounds, "games", games);
         }
@@ -130,6 +140,11 @@ public final class GameEngine {
     // ------------------------------------------------------------------ lobby
 
     public PlayerState addPlayer(String rawName, boolean bot) {
+        return addPlayer(rawName, bot, null);
+    }
+
+    /** v3 "New heist": players moved from the last room keep their face (still unique, they all came from one room). */
+    public PlayerState addPlayer(String rawName, boolean bot, String keepFace) {
         if (phase != Phase.LOBBY) throw new GameError("game_in_progress", "The heist already started");
         if (players.size() >= b.i("players.max")) throw new GameError("room_full", "Room is full");
         String name = cleanName(rawName);
@@ -138,7 +153,7 @@ public final class GameEngine {
             if (p.name.equalsIgnoreCase(name)) name = name + (players.size() + 1);
         }
         PlayerState p = new PlayerState("p" + (++idCounter), name, ++joinCounter, bot);
-        p.face = freeFace();
+        p.face = keepFace != null && players.values().stream().noneMatch(x -> keepFace.equals(x.face)) ? keepFace : freeFace();
         players.put(p.id, p);
         log.log(roomId, 0, p.id, "join", Json.obj("name", name, "bot", bot));
         dirty = true;

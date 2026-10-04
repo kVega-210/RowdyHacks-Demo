@@ -96,6 +96,18 @@ public final class RoomManager {
         return room;
     }
 
+    /** v3 "New heist": a new lobby with the same settings and everyone who is still connected to {@code old}. */
+    public Room rematch(Room old) {
+        Room fresh = create(old.engine.settings.copy());
+        try {
+            old.moveTo(fresh);
+        } catch (RuntimeException e) {
+            rooms.remove(fresh.code);
+            throw e;
+        }
+        return fresh;
+    }
+
     public Room get(String code) {
         return code == null ? null : rooms.get(code.trim().toUpperCase());
     }

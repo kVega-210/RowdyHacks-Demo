@@ -56,7 +56,7 @@ public final class Bot {
     }
 
     private final String url;
-    private final String room;
+    private volatile String room;
     private final String name;
     private final Config cfg;
     private final Random rnd;
@@ -231,6 +231,15 @@ public final class Bot {
             case "welcome" -> {
                 token = Json.str(m, "token", token);
                 playerId = Json.str(m, "playerId", playerId);
+                String moved = Json.str(m, "room", room);
+                if (!moved.equals(room)) { // the host pressed "New heist": play again in the new room
+                    room = moved;
+                    duelId = null;
+                    if (done) {
+                        done = false;
+                        pinger = TIMERS.scheduleAtFixedRate(() -> send(Json.msg("ping")), 10, 10, TimeUnit.SECONDS);
+                    }
+                }
             }
             case "state" -> {
                 List<String> ids = new ArrayList<>();

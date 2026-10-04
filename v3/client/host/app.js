@@ -43,6 +43,16 @@ const sock = new HeistSocket({
 const ctx = { store, send: (m) => sock.send(m) };
 const admin = installAdmin(ctx);
 
+// v3: "New heist" on the final screen opens a new lobby with everyone who is still connected.
+document.addEventListener('click', (e) => {
+  const b = e.target.closest && e.target.closest('[data-new-heist]');
+  if (!b) return;
+  e.preventDefault();
+  b.disabled = true;
+  b.textContent = 'Opening a new room...';
+  sock.send({ t: 'new_heist' });
+});
+
 document.addEventListener('click', () => {
   unlockAudio();
   narrator.unlock();
@@ -52,6 +62,7 @@ document.addEventListener('click', () => {
 function handle(m) {
   switch (m.t) {
     case 'welcome':
+      if (store.room && store.room !== m.room) Object.assign(store, { final: null, roast: null, duels: {}, rivalEvent: false }); // New heist
       Object.assign(store, { room: m.room, hostToken: m.hostToken, settings: m.settings });
       save({ room: m.room, hostToken: m.hostToken });
       $('roomTag').textContent = m.room;

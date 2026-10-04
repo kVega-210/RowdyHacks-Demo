@@ -63,6 +63,10 @@ const runner = new Runner(ctx);
 function handle(m) {
   switch (m.t) {
     case 'welcome':
+      if (store.room && store.room !== m.room) { // the host pressed "New heist": same crew, new lobby
+        Object.assign(store, { final: null, assign: null, between: null, hvh: null, rivalEvent: false });
+        toast('New heist! Same crew, new vault.', 'good');
+      }
       Object.assign(store, { room: m.room, playerId: m.playerId, token: m.token, name: m.name, face: m.face, pending: null });
       join.saveSession({ room: m.room, token: m.token, name: m.name });
       if (m.resumed) toast('Back in the heist!', 'good');
@@ -313,4 +317,4 @@ if (saved && saved.token && (!wantRoom || wantRoom.toUpperCase() === saved.room)
 } else {
   join.render(ctx);
 }
-window.__phone = { store, ctx };
+window.__phone = { store, ctx, sock };

@@ -434,7 +434,7 @@ public final class HeistServer {
                 case "host_resume" -> {
                     Room r = room(msg);
                     if (!r.hostToken.equals(Json.str(msg, "hostToken", ""))) throw new GameError("bad_token", "Not the host of this room");
-                    r.attachHost(c);
+                    r.current().attachHost(c); // a host that reloads after "New heist" lands in the new room
                 }
                 case "join" -> room(msg).join(c, Json.str(msg, "name", ""), Json.bool(msg, "bot", false));
                 case "resume" -> room(msg).resume(c, Json.str(msg, "token", ""));
@@ -444,7 +444,8 @@ public final class HeistServer {
         }
         Room r = rooms.get(c.roomCode);
         if (r == null) throw new GameError("no_room", "Room closed");
-        if ("host".equals(c.role)) r.handleHost(c, msg);
+        if ("host".equals(c.role) && "new_heist".equals(t)) rooms.rematch(r);
+        else if ("host".equals(c.role)) r.handleHost(c, msg);
         else r.handlePhone(c, msg);
     }
 

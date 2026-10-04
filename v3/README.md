@@ -31,7 +31,14 @@ node scripts/browser-check/minigames.mjs        # fuzz every minigame in headles
 node scripts/browser-check/fit.mjs               # every minigame fits above the terminal on 320x480 .. 412x780 phones
 HEIST_TIME_SCALE=4 PORT=7173 ./run.sh           # sped-up server, then:
 node scripts/browser-check/e2e.mjs http://localhost:7173   # host + phone + bots full game
+node scripts/browser-check/rematch.mjs http://localhost:7173   # end a game, press New heist, same crew in the new lobby
 ```
+
+## New heist (same crew)
+On the final screen, **▶ New heist (same crew)** opens a new room with the same settings and moves everyone over: the
+host screen, every connected phone and the bots, keeping their names and faces. Phones jump straight to the new lobby;
+the host just presses Start. A phone that dropped in the last minute (locked screen, Wi-Fi blip) follows when it
+reconnects. Anyone gone longer can join the new room with its QR code as usual.
 
 ## Rival duels (v3)
 - **Rival rounds** (round 5 by default) happen only with an **even** crew: everyone is paired at random and duels their
