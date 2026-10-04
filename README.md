@@ -24,6 +24,9 @@ key-signing secret). Without them everything still works with offline fallbacks.
 **v2:** a reworked copy with the terminal, the new effects and redesigned minigames lives in [`v2/`](v2/README.md)
 (`cd v2` then `./run.sh` or `.\run.cmd`, port 7071).
 
+**v3:** v2 plus round themes (classic red/black/yellow, cyber green) and stylised fonts lives in [`v3/`](v3/README.md)
+(`cd v3` then `./run.sh` or `.\run.cmd`, port 7072).
+
 ## Tests and tools
 ```sh
 ./run.sh test                    # 52 JUnit tests incl. a full 6-bot game over real WebSockets (~25s)

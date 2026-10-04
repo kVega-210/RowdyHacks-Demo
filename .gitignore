@@ -26,3 +26,8 @@ v2/server/target/
 v2/data/
 v2/client/host/audio/lines/
 v2/client/host/audio/manifest.json
+# v3 copy
+v3/server/target/
+v3/data/
+v3/client/host/audio/lines/
+v3/client/host/audio/manifest.json

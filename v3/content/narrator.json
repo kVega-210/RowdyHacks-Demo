@@ -1,0 +1,377 @@
+{
+  "_doc": "AU-01 Mastermind narrator lines keyed by event. Host plays a random line per event (pre-generated mp3 via scripts/gen-voice.sh, Web Speech fallback). 'named' lines (max 8) have a {name} slot and go through /api/tts.",
+  "voice": {
+    "character": "The Mastermind",
+    "style": "smug, theatrical, heist-movie narrator",
+    "pace": "quick"
+  },
+  "lines": [
+    {
+      "id": "game_start_1",
+      "event": "game_start",
+      "text": "Good evening, crew. I am the Mastermind. Tonight we rob a bank. Try not to rob each other. Actually, do."
+    },
+    {
+      "id": "game_start_2",
+      "event": "game_start",
+      "text": "Phones out, faces on. The vault opens now."
+    },
+    {
+      "id": "game_start_3",
+      "event": "game_start",
+      "text": "Welcome to the heist of the century. Or at least of the evening."
+    },
+    {
+      "id": "countdown_3_1",
+      "event": "countdown_3",
+      "text": "Three."
+    },
+    {
+      "id": "countdown_2_1",
+      "event": "countdown_2",
+      "text": "Two."
+    },
+    {
+      "id": "countdown_1_1",
+      "event": "countdown_1",
+      "text": "One."
+    },
+    {
+      "id": "go_1",
+      "event": "go",
+      "text": "Go go go!"
+    },
+    {
+      "id": "go_2",
+      "event": "go",
+      "text": "Crack it!"
+    },
+    {
+      "id": "round_intro_1",
+      "event": "round_intro",
+      "text": "Next job. Same bank. Fewer friends."
+    },
+    {
+      "id": "round_intro_2",
+      "event": "round_intro",
+      "text": "New round, new locks. Faster this time."
+    },
+    {
+      "id": "round_intro_3",
+      "event": "round_intro",
+      "text": "Gloves on. The alarm clock is ticking."
+    },
+    {
+      "id": "round_intro_4",
+      "event": "round_intro",
+      "text": "Here comes the next vault. Don't fumble it."
+    },
+    {
+      "id": "round_intro_5",
+      "event": "round_intro",
+      "text": "The guards changed shifts. Move!"
+    },
+    {
+      "id": "round_breakin_1",
+      "event": "round_breakin",
+      "text": "Break-in round. Lasers, locks and guards. Move."
+    },
+    {
+      "id": "round_breakin_2",
+      "event": "round_breakin",
+      "text": "Break-in! Anyone could be a thief. Especially you."
+    },
+    {
+      "id": "round_hack_1",
+      "event": "round_hack",
+      "text": "Hack round. Bigger payouts. Type fast."
+    },
+    {
+      "id": "round_hack_2",
+      "event": "round_hack",
+      "text": "Hack round! The firewall is thin and the cash is fat."
+    },
+    {
+      "id": "round_rival_1",
+      "event": "round_rival",
+      "text": "Rival heist. Two crooks, one vault. Everyone else: grab popcorn."
+    },
+    {
+      "id": "round_rival_2",
+      "event": "round_rival",
+      "text": "It's a showdown. Winner takes most of the pot."
+    },
+    {
+      "id": "steal_1",
+      "event": "steal",
+      "text": "STEAL! Grab someone's key and scan it!"
+    },
+    {
+      "id": "steal_2",
+      "event": "steal",
+      "text": "Steal window! Scan a rival key, now!"
+    },
+    {
+      "id": "steal_3",
+      "event": "steal",
+      "text": "Pickpocket time! Scan a key!"
+    },
+    {
+      "id": "steal_success_1",
+      "event": "steal_success",
+      "text": "Clean lift. Somebody's wallet just got lighter."
+    },
+    {
+      "id": "steal_success_2",
+      "event": "steal_success",
+      "text": "Robbed! And in front of everyone."
+    },
+    {
+      "id": "steal_success_3",
+      "event": "steal_success",
+      "text": "Smooth. Very smooth. I'm almost proud."
+    },
+    {
+      "id": "steal_blocked_1",
+      "event": "steal_blocked",
+      "text": "Blocked! A shield ate that steal."
+    },
+    {
+      "id": "steal_blocked_2",
+      "event": "steal_blocked",
+      "text": "Nice try. That wallet was a decoy."
+    },
+    {
+      "id": "freeze_1",
+      "event": "freeze",
+      "text": "FREEZE! Hands off your phone!"
+    },
+    {
+      "id": "freeze_2",
+      "event": "freeze",
+      "text": "Freeze! Nobody move a finger!"
+    },
+    {
+      "id": "freeze_3",
+      "event": "freeze",
+      "text": "Statues, everyone. Freeze!"
+    },
+    {
+      "id": "freeze_end_1",
+      "event": "freeze_end",
+      "text": "And... relax."
+    },
+    {
+      "id": "freeze_end_2",
+      "event": "freeze_end",
+      "text": "You may resume your crimes."
+    },
+    {
+      "id": "bankraid_1",
+      "event": "bankraid",
+      "text": "BANK RAID! Smash that grab button!"
+    },
+    {
+      "id": "bankraid_2",
+      "event": "bankraid",
+      "text": "The vault door is open! Grab the cash!"
+    },
+    {
+      "id": "bank_75_1",
+      "event": "bank_75",
+      "text": "A quarter of the bank is gone. They'll notice soon."
+    },
+    {
+      "id": "bank_75_2",
+      "event": "bank_75",
+      "text": "Seventy five percent left. Keep it quiet."
+    },
+    {
+      "id": "bank_50_1",
+      "event": "bank_50",
+      "text": "Half the bank is gone. Sirens are warming up."
+    },
+    {
+      "id": "bank_50_2",
+      "event": "bank_50",
+      "text": "Fifty percent left. Start thinking about the exit."
+    },
+    {
+      "id": "bank_25_1",
+      "event": "bank_25",
+      "text": "Only a quarter left. This is getting dangerous."
+    },
+    {
+      "id": "bank_25_2",
+      "event": "bank_25",
+      "text": "Twenty five percent. The cops are on their way."
+    },
+    {
+      "id": "bank_0_1",
+      "event": "bank_0",
+      "text": "The bank is empty! Heist over, wallets banked."
+    },
+    {
+      "id": "bank_0_2",
+      "event": "bank_0",
+      "text": "Not a dollar left. Count your loot."
+    },
+    {
+      "id": "escape_1",
+      "event": "escape",
+      "text": "ESCAPE! Tap to bank your cash before the doors lock!"
+    },
+    {
+      "id": "escape_2",
+      "event": "escape",
+      "text": "The alarm is blaring! Escape now or lose it all!"
+    },
+    {
+      "id": "escape_3",
+      "event": "escape",
+      "text": "Run! Unbanked cash stays behind!"
+    },
+    {
+      "id": "fail_1",
+      "event": "fail",
+      "text": "Ooh. That's going on the highlight reel."
+    },
+    {
+      "id": "fail_2",
+      "event": "fail",
+      "text": "Sloppy. Very sloppy."
+    },
+    {
+      "id": "fail_3",
+      "event": "fail",
+      "text": "The vault laughs at you."
+    },
+    {
+      "id": "fail_4",
+      "event": "fail",
+      "text": "Butterfingers."
+    },
+    {
+      "id": "fail_5",
+      "event": "fail",
+      "text": "And that, crew, is how you get caught."
+    },
+    {
+      "id": "results_1",
+      "event": "results",
+      "text": "Let's count the loot."
+    },
+    {
+      "id": "results_2",
+      "event": "results",
+      "text": "Time to see who's been naughty and who's been rich."
+    },
+    {
+      "id": "between_1",
+      "event": "between",
+      "text": "Catch your breath. Draw a card if you dare."
+    },
+    {
+      "id": "between_2",
+      "event": "between",
+      "text": "Short break. Plot your revenge."
+    },
+    {
+      "id": "rival_1",
+      "event": "rival",
+      "text": "Two challengers enter. One leaves richer."
+    },
+    {
+      "id": "rival_win_1",
+      "event": "rival_win",
+      "text": "We have a winner of the showdown!"
+    },
+    {
+      "id": "rival_win_2",
+      "event": "rival_win",
+      "text": "The rival heist is over. The loser pays."
+    },
+    {
+      "id": "hvh_1",
+      "event": "hvh",
+      "text": "Hacker versus hacker! Someone just got the scramble button."
+    },
+    {
+      "id": "hvh_2",
+      "event": "hvh",
+      "text": "A rogue hacker is loose in the system."
+    },
+    {
+      "id": "hvh_scramble_1",
+      "event": "hvh_scramble",
+      "text": "Signal jammed! Good luck reading that."
+    },
+    {
+      "id": "hvh_scramble_2",
+      "event": "hvh_scramble",
+      "text": "Scrambled! Somebody's having a bad time."
+    },
+    {
+      "id": "winner_1",
+      "event": "winner",
+      "text": "The heist is over. We have our mastermind."
+    },
+    {
+      "id": "winner_2",
+      "event": "winner",
+      "text": "Pack it up. The richest crook wins."
+    },
+    {
+      "id": "lobby_1",
+      "event": "lobby",
+      "text": "Waiting for the crew. Scan in when you're ready."
+    },
+    {
+      "id": "lobby_2",
+      "event": "lobby",
+      "text": "Join with the code on screen. Don't be shy, thief."
+    }
+  ],
+  "named": [
+    {
+      "id": "named_winner_1",
+      "event": "winner",
+      "text": "{name} takes the crown. And all the money."
+    },
+    {
+      "id": "named_winner_2",
+      "event": "winner",
+      "text": "Congratulations, {name}. The cleanest getaway of the night."
+    },
+    {
+      "id": "named_steal_success_3",
+      "event": "steal_success",
+      "text": "{name} just lifted a wallet. Shameless."
+    },
+    {
+      "id": "named_fail_4",
+      "event": "fail",
+      "text": "{name}, that was painful to watch."
+    },
+    {
+      "id": "named_fail_5",
+      "event": "fail",
+      "text": "Somebody check on {name}. That lock won."
+    },
+    {
+      "id": "named_rival_win_6",
+      "event": "rival_win",
+      "text": "{name} wins the showdown!"
+    },
+    {
+      "id": "named_hvh_7",
+      "event": "hvh",
+      "text": "{name} has the scramble button. Be afraid."
+    },
+    {
+      "id": "named_escape_8",
+      "event": "escape",
+      "text": "{name} is out the door with the cash!"
+    }
+  ]
+}

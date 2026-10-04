@@ -1,0 +1,4 @@
+{
+  "_doc": "Optional real audio files. Put .mp3/.ogg/.wav files in this folder and list them here as \"name\": \"file\". A listed file replaces the synthesised sound of the same name; anything not listed keeps the synth version. Names: success soundboard = register, coin, jingle; fail soundboard = siren, cuffs; also click, alarm, freeze, vault, tick, win; and music (a seamless loop whose pitch and tempo rise with the game). Example: \"sounds\": { \"register\": \"cash-register.mp3\", \"music\": \"heist-loop.ogg\" }",
+  "sounds": {}
+}

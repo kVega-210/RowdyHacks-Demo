@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="icon" href="data:,">
+<title>Heist Replay · HEIST HAVOC!</title>
+<style>
+  :root{color-scheme:dark}
+  body{margin:0;background:#05070d;color:#eef4ff;font:16px system-ui,sans-serif;padding:16px}
+  h1{color:#ffd84d;margin:0 0 8px}
+  select{font:inherit;padding:8px;border-radius:8px;background:#0f1628;color:inherit;border:1px solid #24304f}
+  canvas{width:100%;height:420px;background:#0b1120;border:1px solid #24304f;border-radius:12px;margin-top:12px}
+  table{border-collapse:collapse;width:100%;margin-top:14px}td,th{padding:6px 10px;border-bottom:1px solid #24304f;text-align:left}th{color:#8fa1c7}
+  .legend span{display:inline-block;margin-right:14px}.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:4px;vertical-align:middle}
+  #markers{max-height:220px;overflow:auto;font-size:14px;color:#8fa1c7;margin-top:10px}
+</style>
+</head>
+<body>
+<h1>Heist Replay</h1>
+<div>Game: <select id="room"></select> <span id="src" style="color:#8fa1c7"></span></div>
+<div class="legend" id="legend"></div>
+<canvas id="chart" width="1200" height="420"></canvas>
+<table id="stats"></table>
+<div id="markers"></div>
+<script type="module">
+// DB-03 replay timeline: cash over time per player with steal / fail markers, from /api/replay/{room}.
+const COLORS = ['#ffd84d', '#4dd2ff', '#3dff9a', '#ff5c7a', '#c77dff', '#ff9f43', '#9fe3ff', '#f0a'];
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+const want = new URLSearchParams(location.search).get('room');
+const rooms = await fetch('/api/games').then((r) => r.json()).catch(() => []);
+if (want && !rooms.includes(want)) rooms.unshift(want);
+rooms.forEach((r) => $('room').append(new Option(r, r)));
+if (want) $('room').value = want;
+$('room').onchange = () => draw($('room').value);
+if (rooms.length) draw($('room').value); else $('src').textContent = 'No finished games yet.';
+
+async function draw(room) {
+  const [tl, st] = await Promise.all([fetch(`/api/replay/${room}`).then((r) => r.json()), fetch(`/api/stats/${room}`).then((r) => r.json())]);
+  const c = $('chart'), g = c.getContext('2d');
+  c.width = c.clientWidth * devicePixelRatio; c.height = c.clientHeight * devicePixelRatio;
+  g.scale(devicePixelRatio, devicePixelRatio);
+  const W = c.clientWidth, H = c.clientHeight, pad = 40;
+  g.clearRect(0, 0, W, H);
+  const pts = tl.points.map((p) => ({ ...p, t: Date.parse(p.ts) }));
+  const marks = tl.markers.map((m) => ({ ...m, t: Date.parse(m.ts) }));
+  if (!pts.length) { g.fillStyle = '#8fa1c7'; g.fillText('No cash events recorded for this game.', 20, 30); return; }
+  const t0 = Math.min(...pts.map((p) => p.t), ...marks.map((m) => m.t)), t1 = Math.max(...pts.map((p) => p.t), ...marks.map((m) => m.t));
+  const maxW = Math.max(100, ...pts.map((p) => p.wallet));
+  const X = (t) => pad + ((t - t0) / Math.max(1, t1 - t0)) * (W - pad * 2);
+  const Y = (v) => H - pad - (v / maxW) * (H - pad * 2);
+  g.strokeStyle = '#24304f'; g.fillStyle = '#8fa1c7'; g.font = '12px system-ui';
+  for (let i = 0; i <= 4; i++) { const v = (maxW * i) / 4; g.beginPath(); g.moveTo(pad, Y(v)); g.lineTo(W - pad, Y(v)); g.stroke(); g.fillText('$' + Math.round(v), 2, Y(v) + 4); }
+  for (const m of marks.filter((m) => m.type === 'round_start')) { g.strokeStyle = '#ffd84d44'; g.beginPath(); g.moveTo(X(m.t), pad); g.lineTo(X(m.t), H - pad); g.stroke(); g.fillText('R' + m.round, X(m.t) + 3, pad - 4); }
+  const players = Object.keys(tl.names);
+  $('legend').innerHTML = players.map((p, i) => `<span><i style="background:${COLORS[i % 8]}"></i>${esc(tl.names[p])}</span>`).join('');
+  players.forEach((p, i) => {
+    const series = pts.filter((q) => q.player === p);
+    g.strokeStyle = COLORS[i % 8]; g.lineWidth = 2.5; g.beginPath();
+    let last = 0; g.moveTo(X(t0), Y(0));
+    for (const q of series) { g.lineTo(X(q.t), Y(last)); g.lineTo(X(q.t), Y(q.wallet)); last = q.wallet; }
+    g.lineTo(X(t1), Y(last)); g.stroke();
+  });
+  for (const m of marks) {
+    if (m.type === 'round_start') continue;
+    const i = players.indexOf(m.player);
+    const series = pts.filter((q) => q.player === m.player && q.t <= m.t);
+    const y = Y(series.length ? series[series.length - 1].wallet : 0);
+    g.fillStyle = m.type === 'steal' ? '#ff5c7a' : m.type === 'escape' ? '#3dff9a' : '#ff9f43';
+    g.font = '16px system-ui';
+    g.fillText(m.type === 'steal' ? '🦹' : m.type === 'escape' ? '🚐' : m.type === 'freeze_violation' ? '🧊' : '💥', X(m.t) - 8, y - 6 - (i % 3) * 4);
+  }
+  $('stats').innerHTML = '<tr><th>Player</th><th>Wins</th><th>Fails</th><th>Steals</th><th>Stolen</th><th>Robbed</th><th>Freeze</th><th>Earned</th></tr>' +
+    st.players.map((p) => `<tr><td>${esc(p.name)}</td><td>${p.successes}</td><td>${p.fails}</td><td>${p.steals}</td><td>$${p.stolen}</td><td>${p.robbed}</td><td>${p.freezeViolations}</td><td>$${p.earned}</td></tr>`).join('');
+  $('markers').innerHTML = marks.filter((m) => m.type !== 'round_start').map((m) => `<div>${new Date(m.t).toLocaleTimeString()} · ${esc(m.label)}</div>`).join('');
+}
+</script>
+</body>
+</html>
